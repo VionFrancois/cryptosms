@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_sms/flutter_sms.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_sms_inbox/flutter_sms_inbox.dart';
+import 'package:cryptography/cryptography.dart';
 
 void main(){
   runApp(MyApp());
@@ -30,6 +31,7 @@ class _MyAppState extends State<MyApp> {
   void initState() {
     super.initState();
     requestSmsPermission(); // Request permission on app initialization
+    _privateKeyManager();
   }
 
   @override
@@ -106,4 +108,11 @@ void _sendSMS(String message, List<String> recipents) async {
     print(onError);
   });
   print(_result);
+}
+
+Future<void> _privateKeyManager() async{
+  final keyPair = await X25519().newKeyPair();
+  final publicKey = keyPair.extractPublicKey();
+  // TODO : Trouver un moyen d'envoyer la clé publique car ici elle est uniquement sous forme d'objet
+  print('Clé publique: ${publicKey}');
 }
