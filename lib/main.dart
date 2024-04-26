@@ -1,20 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_sms/flutter_sms.dart';
-import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_sms_inbox/flutter_sms_inbox.dart';
 
 void main(){
   runApp(MyApp());
 }
 
-// class MyApp extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       home: Home(),
-//     );
-//   }
-// }
 class MyApp extends StatefulWidget {
   @override
   _MyAppState createState() => _MyAppState();
@@ -48,7 +40,7 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
-List<String> recipents = ["32..."];
+List<String> recipents = ["+32..."];
 
 class Home extends StatelessWidget {
 
@@ -59,9 +51,9 @@ class Home extends StatelessWidget {
       body: Container(
 
         child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: ElevatedButton(
+          child: Column(
+            children: [
+              ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.secondary, // Use secondary color                padding: EdgeInsets.symmetric(vertical: 16.0),
                 textStyle: Theme.of(context).textTheme.button, // Use textTheme.button
@@ -69,16 +61,43 @@ class Home extends StatelessWidget {
               onPressed: () {
                 _sendSMS("Coucou, je t'envoie ce message via mon projet d'application", recipents);
               },
-              child: Text("Send Sms"),
+              child: Text("Send Sms to "),
             ),
-            ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.secondary, // Use secondary color                padding: EdgeInsets.symmetric(vertical: 16.0),
+                  textStyle: Theme.of(context).textTheme.button, // Use textTheme.button
+                ),
+                onPressed: () {
+                  _getIncomingSMS();
+                },
+                child: Text("Send Sms to "),
+              ),
+
+        ]),
           ),
         ),
     );
   }
+}
 
+Future<void> _getIncomingSMS() async {
+  try {
+    // Récupérer les SMS entrants
+    int start = 1;
+    int count = 20;
+    String address = "+32...";
+    List<SmsMessage> messages = await SmsQuery().querySms(address: address);
+    print(messages);
 
-
+    // Faire quelque chose avec les messages reçus, par exemple les afficher
+    for (SmsMessage message in messages) {
+      print('SMS reçu de ${message.address}: ${message.body}');
+      // Vous pouvez également traiter les messages reçus comme vous le souhaitez ici
+    }
+  } catch (e) {
+    print('Erreur lors de la récupération des SMS: $e');
+  }
 }
 
 void _sendSMS(String message, List<String> recipents) async {
