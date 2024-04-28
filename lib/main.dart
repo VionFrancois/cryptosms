@@ -1,15 +1,15 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_sms/flutter_sms.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_sms_inbox/flutter_sms_inbox.dart';
-// import 'package:cryptography/cryptography.dart';
-// import 'dart:convert';
-
+import 'db.dart';
 import 'package:webcrypto/webcrypto.dart';
 
-void main(){
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await DatabaseHelper().initDatabase("1234");
+  newContact("phoneNumber", "name");
   runApp(MyApp());
 }
 
@@ -33,10 +33,9 @@ class _MyAppState extends State<MyApp> {
   }
 
   @override
-  void initState() {
+  void initState(){
     super.initState();
     requestSmsPermission(); // Request permission on app initialization
-    _privateKeyManager();
   }
 
   @override
@@ -115,11 +114,17 @@ void _sendSMS(String message, List<String> recipents) async {
   print(_result);
 }
 
-Future<void> _privateKeyManager() async{
+
+Future<void> newContact(String phoneNumber, String name) async {
+  // Generate new keys
   final keyPair = await EcdhPrivateKey.generateKey(EllipticCurve.p256);
   final publicKey = await keyPair.publicKey.exportJsonWebKey();
-  final publicKeyJson = json.encode(publicKey);
-  // TODO : Stocker les clés
-  // final otherPublicKey = n.
-  print('Clé publique: ${publicKeyJson}');
+  final privateKey = await keyPair.privateKey.exportJsonWebKey();
+
+  // Create contact
+  Contact newContact = Contact(phoneNumber: "00000000", name: "Me", privateKey: json.encode(privateKey), publicKey: json.encode(publicKey), symmetricKey: "");
+  await DatabaseHelper().insertContact(newContact);
+
+  var contacts = await DatabaseHelper().getAllContacts();
+  // TODO : Implémenter des getter sur le contact
 }

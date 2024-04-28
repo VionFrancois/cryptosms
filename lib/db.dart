@@ -18,6 +18,8 @@ class Contact {
       'symmetricKey' : symmetricKey,
     };
   }
+
+  // TODO : Implémenter des getter
 }
 
 class DatabaseHelper {
@@ -28,11 +30,11 @@ class DatabaseHelper {
 
   DatabaseHelper._internal();
 
-  Future<void> initDatabase() async {
+  Future<void> initDatabase(String password) async {
     String databasesPath = await getDatabasesPath();
     String path = '${databasesPath}your_database.db';
 
-    db = await openDatabase(path, password: 'your_password', onCreate: _onCreate);
+    db = await openDatabase(path, password: password, version: 1, onCreate: _onCreate);
   }
 
 // Méthodes pour manipuler la base de données
@@ -42,9 +44,9 @@ class DatabaseHelper {
       CREATE TABLE contacts (
         phoneNumber TEXT PRIMARY KEY,
         name TEXT,
-        primary key TEXT,
-        public key TEXT,
-        symmetric key TEXT
+        privateKey TEXT,
+        publicKey TEXT,
+        symmetricKey TEXT
       )
     ''');
   }
