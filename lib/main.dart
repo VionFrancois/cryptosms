@@ -1,8 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_sms/flutter_sms.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_sms_inbox/flutter_sms_inbox.dart';
-import 'package:cryptography/cryptography.dart';
+// import 'package:cryptography/cryptography.dart';
+// import 'dart:convert';
+
+import 'package:webcrypto/webcrypto.dart';
 
 void main(){
   runApp(MyApp());
@@ -111,8 +116,10 @@ void _sendSMS(String message, List<String> recipents) async {
 }
 
 Future<void> _privateKeyManager() async{
-  final keyPair = await X25519().newKeyPair();
-  final publicKey = keyPair.extractPublicKey();
-  // TODO : Trouver un moyen d'envoyer la clé publique car ici elle est uniquement sous forme d'objet
-  print('Clé publique: ${publicKey}');
+  final keyPair = await EcdhPrivateKey.generateKey(EllipticCurve.p256);
+  final publicKey = await keyPair.publicKey.exportJsonWebKey();
+  final publicKeyJson = json.encode(publicKey);
+  // TODO : Stocker les clés
+  // final otherPublicKey = n.
+  print('Clé publique: ${publicKeyJson}');
 }
