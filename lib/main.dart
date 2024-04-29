@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_sms/flutter_sms.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -9,9 +10,17 @@ import 'package:webcrypto/webcrypto.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await DatabaseHelper().initDatabase("1234");
-  final phoneNumber = "";
-  final name = "";
-  newContact(phoneNumber, name);
+  verifyContactsKeys();
+
+
+  // final con2 = await DatabaseHelper().getContact("");
+  // final message = await _getIncomingSMS("");
+  // final mess = message![0].body;
+  // sendEncryptedMessage(con2!, "");
+  // print(await readEncryptedMessage(con2!,mess!));
+  // print(con2?.symmetricKey);
+  // final publicKey = await fetchKey(phoneNumber);
+  // completeHandshake(con!, publicKey!);
 
   runApp(MyApp());
 }
@@ -49,7 +58,7 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
-List<String> recipients = ["+32"];
+List<String> recipients = ["+32..."];
 
 class Home extends StatelessWidget {
 
@@ -95,7 +104,7 @@ Future<List<SmsMessage>?> _getIncomingSMS(String address) async {
     // Récupérer les SMS entrants
     // int start = 1;
     // int count = 20;
-    List<SmsMessage> messages = await SmsQuery().querySms(address: address);
+    List<SmsMessage> messages = await SmsQuery().querySms(address: "+${address}");
     return messages;
     // Faire quelque chose avec les messages reçus, par exemple les afficher
     // for (SmsMessage message in messages) {
@@ -149,18 +158,80 @@ void initHandshake(Contact contact){
   Future.delayed(Duration(seconds: 1), () {_sendSMS(keyMessage, contact.phoneNumber);});
 }
 
+void verifyContactsKeys() async{
+  final contacts = await DatabaseHelper().getAllContacts();
+  for(Contact contact in contacts){
+    if(contact.symmetricKey == ""){
+      final key = await fetchKey(contact.phoneNumber);
+      if(key != null){
+        completeHandshake(contact, key);
+      }
+    }
+  }
+}
+
 
 Future<String?> fetchKey(String phoneNumber) async{
-  // TODO : Tester sur un téléphone
   final messages = await _getIncomingSMS(phoneNumber);
-  var key = "la clé quoi";
   for (SmsMessage message in messages!) {
     var content = message.body!;
     if(content.startsWith("cryptoSMS key : ")){
-        final key = content.substring(15, content.length);
+        final key = content.substring(16, content.length);
         return key;
     }
-    print('SMS reçu de ${message.address}: ${message.body}');
   }
   return null;
+}
+
+void completeHandshake(Contact contact, String otherKey) async{
+  // Clé publique du contact
+  final publicKeyJson = json.decode(otherKey);
+  final publicKey = await EcdhPublicKey.importJsonWebKey(publicKeyJson, EllipticCurve.p256);
+  // Clé privée de l'utilisateur pour ce contact
+  final privateKeyJson = json.decode(contact.privateKey);
+  final privateKey = await EcdhPrivateKey.importJsonWebKey(privateKeyJson, EllipticCurve.p256);
+
+  final derivedKey = await privateKey.deriveBits(256, publicKey);
+  final derivedKeyStr = derivedKey.toString();
+  DatabaseHelper().updateSymmetricKey(contact.phoneNumber, derivedKeyStr);
+}
+
+
+void sendEncryptedMessage(Contact contact, String message) async {
+  // TODO : Mieux gérer les IV ?
+  final Uint8List iv = Uint8List.fromList('Initialization Vector'.codeUnits);
+
+  // Convertis la clé de String à List<int>
+  final List<String> numbers = contact.symmetricKey.substring(1, contact.symmetricKey.length - 1).split(', ');
+  final List<int> key = numbers.map((string) => int.parse(string)).toList();
+
+  // Clé pour AES CGM
+  final aesGcmKey = await AesGcmSecretKey.importRawKey(key);
+
+  // Message sous forme de bytes
+  final messageBytes = Uint8List.fromList(message.codeUnits);
+
+  final encryptedMessageBytes = await aesGcmKey.encryptBytes(messageBytes, iv);
+
+  final encryptedMessage = String.fromCharCodes(encryptedMessageBytes);
+
+  _sendSMS(encryptedMessage, contact.phoneNumber);
+}
+
+Future<String> readEncryptedMessage(Contact contact, String encryptedMessage) async{
+  // TODO : Mieux gérer les iv ?
+  final Uint8List iv = Uint8List.fromList('Initialization Vector'.codeUnits);
+
+  final List<String> numbers = contact.symmetricKey.substring(1, contact.symmetricKey.length - 1).split(', ');
+  final List<int> key = numbers.map((string) => int.parse(string)).toList();
+
+  final aesGcmKey = await AesGcmSecretKey.importRawKey(key);
+
+  final messageBytes = Uint8List.fromList(encryptedMessage.codeUnits);
+
+  final decryptedMessageBytes =  await aesGcmKey.decryptBytes(messageBytes, iv);
+
+  final decryptedMessage = String.fromCharCodes(decryptedMessageBytes);
+
+  return decryptedMessage;
 }

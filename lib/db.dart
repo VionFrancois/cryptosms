@@ -122,4 +122,13 @@ class DatabaseHelper {
     );
   }
 
+  Future<int> updateSymmetricKey(String phoneNumber, String newSymmetricKey) async {
+    return await db!.update(
+      'contacts', // Nom de la table
+      {'symmetricKey': newSymmetricKey},
+      where: 'phoneNumber = ?',
+      whereArgs: [phoneNumber],
+    );
+  }
+
 }
