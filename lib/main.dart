@@ -116,15 +116,18 @@ void _sendSMS(String message, List<String> recipents) async {
 
 
 Future<void> newContact(String phoneNumber, String name) async {
-  // Generate new keys
-  final keyPair = await EcdhPrivateKey.generateKey(EllipticCurve.p256);
-  final publicKey = await keyPair.publicKey.exportJsonWebKey();
-  final privateKey = await keyPair.privateKey.exportJsonWebKey();
+  // Verify that the contact does not exist
+  if(await DatabaseHelper().getContact(phoneNumber) == null){
+    // Generate new keys
+    final keyPair = await EcdhPrivateKey.generateKey(EllipticCurve.p256);
+    final publicKey = await keyPair.publicKey.exportJsonWebKey();
+    final privateKey = await keyPair.privateKey.exportJsonWebKey();
 
-  // Create contact
-  Contact newContact = Contact(phoneNumber: "00000000", name: "Me", privateKey: json.encode(privateKey), publicKey: json.encode(publicKey), symmetricKey: "");
-  await DatabaseHelper().insertContact(newContact);
+    // Create contact
+    Contact newContact = Contact(phoneNumber: phoneNumber, name: name, privateKey: json.encode(privateKey), publicKey: json.encode(publicKey), symmetricKey: "");
+    await DatabaseHelper().insertContact(newContact);
+  }
+  // TODO : Raise an error or something, we're trying to overwrite a contact (could be usefull)
 
-  var contacts = await DatabaseHelper().getAllContacts();
-  // TODO : Implémenter des getter sur le contact
+
 }

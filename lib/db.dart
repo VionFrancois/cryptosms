@@ -20,6 +20,34 @@ class Contact {
   }
 
   // TODO : Implémenter des getter
+  String getPhoneNumber(){
+    return phoneNumber;
+  }
+
+  String getName(){
+    return name;
+  }
+
+  // On peut éviter d'y accéder en instanciant le contact et en intéragissant avec via des fonctions
+  // Genre create symmetricKey() où on donnera la clé de l'autre reçu et encrypt() qui utilisera la clé mais sans
+  // la sortir de l'objet contact
+  // String getPrivateKey(){
+  //   return privateKey;
+  // }
+  //
+  // String getPublicKey(){
+  //   return publicKey;
+  // }
+
+  // String getSymmetricKey(){
+  //
+  // }
+
+  String encrypt(String message){
+    // TODO : Implement encryption with symmetricKey
+    return message;
+  }
+
 }
 
 class DatabaseHelper {
@@ -53,7 +81,8 @@ class DatabaseHelper {
 
   // Méthode pour insérer un contact dans la table
   Future<int> insertContact(Contact contact) async {
-    return await db!.insert('contacts', contact.toMap());
+    final result = await db!.insert('contacts', contact.toMap());
+    return result;
   }
 
   // Méthode pour récupérer tous les contacts de la table
@@ -69,6 +98,28 @@ class DatabaseHelper {
         symmetricKey: maps[i]['symmetricKey'],
       );
     });
+  }
+
+  Future<Contact?> getContact(String phoneNumber) async {
+    List<Map<String, dynamic>> maps = await db!.query(
+      'contacts',
+      where: 'phoneNumber = ?',
+      whereArgs: [phoneNumber],
+    );
+
+    // Si aucun contact n'est trouvé, retourne null
+    if (maps.isEmpty) {
+      return null;
+    }
+
+    // Sinon, crée et retourne le contact à partir des données de la base de données
+    return Contact(
+      phoneNumber: maps[0]['phoneNumber'],
+      name: maps[0]['name'],
+      privateKey: maps[0]['privateKey'],
+      publicKey: maps[0]['publicKey'],
+      symmetricKey: maps[0]['symmetricKey'],
+    );
   }
 
 }
