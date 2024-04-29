@@ -9,7 +9,10 @@ import 'package:webcrypto/webcrypto.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await DatabaseHelper().initDatabase("1234");
-  newContact("phoneNumber", "name");
+  final phoneNumber = "";
+  final name = "";
+  newContact(phoneNumber, name);
+
   runApp(MyApp());
 }
 
@@ -46,7 +49,7 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
-List<String> recipents = ["+32..."];
+List<String> recipients = ["+32"];
 
 class Home extends StatelessWidget {
 
@@ -65,7 +68,7 @@ class Home extends StatelessWidget {
                 textStyle: Theme.of(context).textTheme.button, // Use textTheme.button
               ),
               onPressed: () {
-                _sendSMS("Coucou, je t'envoie ce message via mon projet d'application", recipents);
+                _sendSMS("Coucou, je t'envoie ce message via mon projet d'application", recipients as String);
               },
               child: Text("Send Sms to "),
             ),
@@ -75,7 +78,7 @@ class Home extends StatelessWidget {
                   textStyle: Theme.of(context).textTheme.button, // Use textTheme.button
                 ),
                 onPressed: () {
-                  _getIncomingSMS();
+                  // _getIncomingSMS();
                 },
                 child: Text("Send Sms to "),
               ),
@@ -87,35 +90,39 @@ class Home extends StatelessWidget {
   }
 }
 
-Future<void> _getIncomingSMS() async {
+Future<List<SmsMessage>?> _getIncomingSMS(String address) async {
   try {
     // Récupérer les SMS entrants
-    int start = 1;
-    int count = 20;
-    String address = "+32...";
+    // int start = 1;
+    // int count = 20;
     List<SmsMessage> messages = await SmsQuery().querySms(address: address);
-    print(messages);
-
+    return messages;
     // Faire quelque chose avec les messages reçus, par exemple les afficher
-    for (SmsMessage message in messages) {
-      print('SMS reçu de ${message.address}: ${message.body}');
-      // Vous pouvez également traiter les messages reçus comme vous le souhaitez ici
-    }
+    // for (SmsMessage message in messages) {
+    //   print('SMS reçu de ${message.address}: ${message.body}');
+    //   // Vous pouvez également traiter les messages reçus comme vous le souhaitez ici
+    // }
   } catch (e) {
     print('Erreur lors de la récupération des SMS: $e');
   }
+  return null;
 }
 
-void _sendSMS(String message, List<String> recipents) async {
-  String _result = await sendSMS(message: message, recipients: recipents,sendDirect: true)
+void _sendSMS(String message, String phoneNumber) async {
+  final recipents = ["+${phoneNumber}"];
+  String _result = await sendSMS(message: message, recipients: recipents, sendDirect: true)
       .catchError((onError) {
     print(onError);
   });
   print(_result);
 }
 
+Future<void> newContact(String phoneNumber, String name) async{
+  final newContact = await createContact(phoneNumber, name);
+  initHandshake(newContact!);
+}
 
-Future<void> newContact(String phoneNumber, String name) async {
+Future<Contact?> createContact(String phoneNumber, String name) async {
   // Verify that the contact does not exist
   if(await DatabaseHelper().getContact(phoneNumber) == null){
     // Generate new keys
@@ -126,8 +133,34 @@ Future<void> newContact(String phoneNumber, String name) async {
     // Create contact
     Contact newContact = Contact(phoneNumber: phoneNumber, name: name, privateKey: json.encode(privateKey), publicKey: json.encode(publicKey), symmetricKey: "");
     await DatabaseHelper().insertContact(newContact);
+    return newContact;
   }
+  return null;
   // TODO : Raise an error or something, we're trying to overwrite a contact (could be usefull)
+}
 
 
+void initHandshake(Contact contact){
+  var message = "Hey ! J'utilise cryptoSMS pour chiffrer mes SMS, rentrons en contact et récupère le contrôle sur tes données. Télécharge l'application via F-Droid. (maybe one day)";
+  var keyMessage = "cryptoSMS key : ${contact.publicKey}";
+  // TODO : Chiffrement du message avec une clé connue ?
+  _sendSMS(message, contact.phoneNumber);
+  // Attends une seconde avant d'envoyer le 2eme message
+  Future.delayed(Duration(seconds: 1), () {_sendSMS(keyMessage, contact.phoneNumber);});
+}
+
+
+Future<String?> fetchKey(String phoneNumber) async{
+  // TODO : Tester sur un téléphone
+  final messages = await _getIncomingSMS(phoneNumber);
+  var key = "la clé quoi";
+  for (SmsMessage message in messages!) {
+    var content = message.body!;
+    if(content.startsWith("cryptoSMS key : ")){
+        final key = content.substring(15, content.length);
+        return key;
+    }
+    print('SMS reçu de ${message.address}: ${message.body}');
+  }
+  return null;
 }
