@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:ffi';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_sms/flutter_sms.dart';
@@ -6,21 +8,13 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_sms_inbox/flutter_sms_inbox.dart';
 import 'db.dart';
 import 'package:webcrypto/webcrypto.dart';
+// import 'package:sms/sms.dart'
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await DatabaseHelper().initDatabase("1234");
   verifyContactsKeys();
-
-
-  // final con2 = await DatabaseHelper().getContact("");
-  // final message = await _getIncomingSMS("");
-  // final mess = message![0].body;
-  // sendEncryptedMessage(con2!, "");
-  // print(await readEncryptedMessage(con2!,mess!));
-  // print(con2?.symmetricKey);
-  // final publicKey = await fetchKey(phoneNumber);
-  // completeHandshake(con!, publicKey!);
+  SMSMonitor().checkForNewSMS();
 
   runApp(MyApp());
 }
@@ -31,6 +25,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  final SMSMonitor _smsMonitor = SMSMonitor();
 
   void requestSmsPermission() async {
     if (await Permission.sms.status.isDenied) {
@@ -48,6 +43,13 @@ class _MyAppState extends State<MyApp> {
   void initState(){
     super.initState();
     requestSmsPermission(); // Request permission on app initialization
+    _smsMonitor.startMonitoring();
+  }
+
+  @override
+  void dispose() {
+    _smsMonitor.stopMonitoring();
+    super.dispose();
   }
 
   @override
@@ -101,16 +103,9 @@ class Home extends StatelessWidget {
 
 Future<List<SmsMessage>?> _getIncomingSMS(String address) async {
   try {
-    // Récupérer les SMS entrants
-    // int start = 1;
-    // int count = 20;
-    List<SmsMessage> messages = await SmsQuery().querySms(address: "+${address}");
+    // Start et count possible
+    List<SmsMessage> messages = await SmsQuery().querySms(kinds:[SmsQueryKind.inbox] , address: "+${address}");
     return messages;
-    // Faire quelque chose avec les messages reçus, par exemple les afficher
-    // for (SmsMessage message in messages) {
-    //   print('SMS reçu de ${message.address}: ${message.body}');
-    //   // Vous pouvez également traiter les messages reçus comme vous le souhaitez ici
-    // }
   } catch (e) {
     print('Erreur lors de la récupération des SMS: $e');
   }
@@ -140,7 +135,7 @@ Future<Contact?> createContact(String phoneNumber, String name) async {
     final privateKey = await keyPair.privateKey.exportJsonWebKey();
 
     // Create contact
-    Contact newContact = Contact(phoneNumber: phoneNumber, name: name, privateKey: json.encode(privateKey), publicKey: json.encode(publicKey), symmetricKey: "");
+    Contact newContact = Contact(phoneNumber: phoneNumber, name: name, privateKey: json.encode(privateKey), publicKey: json.encode(publicKey), symmetricKey: "", lastReceivedMessageDate: DateTime(1970));
     await DatabaseHelper().insertContact(newContact);
     return newContact;
   }
@@ -193,7 +188,20 @@ void completeHandshake(Contact contact, String otherKey) async{
 
   final derivedKey = await privateKey.deriveBits(256, publicKey);
   final derivedKeyStr = derivedKey.toString();
+  // Sauvegarde le message envoyé dans la base de données
   DatabaseHelper().updateSymmetricKey(contact.phoneNumber, derivedKeyStr);
+}
+
+
+bool checkHeader(String encodedMessage){
+  Uint8List messageBytes = base64.decode(encodedMessage);
+
+  if (messageBytes.length >= 3) {
+    if (messageBytes[0] == 0x12 && messageBytes[1] == 0x34 && messageBytes[2] == 0x56) {
+      return true;
+    }
+  }
+  return false;
 }
 
 
@@ -209,11 +217,12 @@ void sendEncryptedMessage(Contact contact, String message) async {
   final aesGcmKey = await AesGcmSecretKey.importRawKey(key);
 
   // Message sous forme de bytes
+  // TODO : Ajouter le header
   final messageBytes = Uint8List.fromList(message.codeUnits);
 
   final encryptedMessageBytes = await aesGcmKey.encryptBytes(messageBytes, iv);
 
-  final encryptedMessage = String.fromCharCodes(encryptedMessageBytes);
+  final encryptedMessage = base64.encode(encryptedMessageBytes);
 
   _sendSMS(encryptedMessage, contact.phoneNumber);
 }
@@ -226,12 +235,73 @@ Future<String> readEncryptedMessage(Contact contact, String encryptedMessage) as
   final List<int> key = numbers.map((string) => int.parse(string)).toList();
 
   final aesGcmKey = await AesGcmSecretKey.importRawKey(key);
-
-  final messageBytes = Uint8List.fromList(encryptedMessage.codeUnits);
+  // TODO : Retirer le header
+  final messageBytes = base64.decode(encryptedMessage);
 
   final decryptedMessageBytes =  await aesGcmKey.decryptBytes(messageBytes, iv);
 
   final decryptedMessage = String.fromCharCodes(decryptedMessageBytes);
 
   return decryptedMessage;
+}
+
+
+class SMSMonitor {
+  Timer? _timer;
+
+  void startMonitoring() {
+    const period = Duration(seconds: 5); // Définit la période de vérification à toutes les 7 secondes
+    _timer = Timer.periodic(period, (Timer t) => checkForNewSMS());
+  }
+
+  void stopMonitoring() {
+    _timer?.cancel();
+  }
+
+
+  var lastMessage;
+
+  Future<List<Contact>?> checkForNewSMS() async {
+    var recentAddresses;
+    try{
+      int start = 0;
+      int count = 5;
+      List<SmsMessage> messages = await SmsQuery().querySms(kinds: [SmsQueryKind.inbox], start: start, count: count);
+      lastMessage ??= DatabaseHelper().getLastReceivedMessageDate(); // Si lastMessage == null, on va le fetch
+      int i = 0;
+      while(lastMessage.lastReceivedMessage != messages[i].dateSent){
+        // Si c'est un message chiffré
+        if(checkHeader(messages[i].body!)){
+          String? address = messages[i].address;
+          // Si on a pas encore relevé ce contact
+          if (!(recentAddresses.contains(address))){
+            recentAddresses.add(address);
+          }
+        }
+        i += 1;
+        if (i == count){
+          start = start + count;
+          count = count + count;
+          messages = await SmsQuery().querySms(start: start, count: count);
+          i = 0;
+        }
+      }
+
+    } catch (e) {
+      print('Erreur lors de la récupération des SMS: $e');
+    }
+
+    // TODO : Génère des erreurs quand c'est null
+    if (recentAddresses.isNotEmpty) {
+      var recentContacts;
+      for (String address in recentAddresses) {
+        recentContacts.add(await DatabaseHelper().getContact(address));
+      }
+      return recentContacts;
+    } else{
+      return null;
+    }
+  }
+
+
 }

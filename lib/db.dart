@@ -6,8 +6,9 @@ class Contact {
   String privateKey;
   String publicKey;
   String symmetricKey;
+  DateTime lastReceivedMessageDate;
 
-  Contact({required this.phoneNumber, required this.name, required this.privateKey, required this.publicKey, required this.symmetricKey});
+  Contact({required this.phoneNumber, required this.name, required this.privateKey, required this.publicKey, required this.symmetricKey, required this.lastReceivedMessageDate});
 
   Map<String, dynamic> toMap() {
     return {
@@ -16,36 +17,8 @@ class Contact {
       'privateKey': privateKey,
       'publicKey' : publicKey,
       'symmetricKey' : symmetricKey,
+      'lastReceivedMessage' : lastReceivedMessageDate,
     };
-  }
-
-  // TODO : Implémenter des getter
-  String getPhoneNumber(){
-    return phoneNumber;
-  }
-
-  String getName(){
-    return name;
-  }
-
-  // On peut éviter d'y accéder en instanciant le contact et en intéragissant avec via des fonctions
-  // Genre create symmetricKey() où on donnera la clé de l'autre reçu et encrypt() qui utilisera la clé mais sans
-  // la sortir de l'objet contact
-  // String getPrivateKey(){
-  //   return privateKey;
-  // }
-  //
-  // String getPublicKey(){
-  //   return publicKey;
-  // }
-
-  // String getSymmetricKey(){
-  //
-  // }
-
-  String encrypt(String message){
-    // TODO : Implement encryption with symmetricKey
-    return message;
   }
 
 }
@@ -65,19 +38,22 @@ class DatabaseHelper {
     db = await openDatabase(path, password: password, version: 1, onCreate: _onCreate);
   }
 
-// Méthodes pour manipuler la base de données
 
   Future<void> _onCreate(Database db, int version) async {
     await db.execute('''
-      CREATE TABLE contacts (
-        phoneNumber TEXT PRIMARY KEY,
-        name TEXT,
-        privateKey TEXT,
-        publicKey TEXT,
-        symmetricKey TEXT
-      )
-    ''');
+    CREATE TABLE contacts (
+      phoneNumber TEXT PRIMARY KEY,
+      name TEXT,
+      privateKey TEXT,
+      publicKey TEXT,
+      symmetricKey TEXT,
+      lastReceivedMessageDate DATETIME
+    );
+  ''');
   }
+
+
+  // ============ CONTACTS ============
 
   // Méthode pour insérer un contact dans la table
   Future<int> insertContact(Contact contact) async {
@@ -96,6 +72,7 @@ class DatabaseHelper {
         privateKey: maps[i]['privateKey'],
         publicKey: maps[i]['publicKey'],
         symmetricKey: maps[i]['symmetricKey'],
+        lastReceivedMessageDate: maps[i]['lastReceivedMessageDate']
       );
     });
   }
@@ -119,6 +96,7 @@ class DatabaseHelper {
       privateKey: maps[0]['privateKey'],
       publicKey: maps[0]['publicKey'],
       symmetricKey: maps[0]['symmetricKey'],
+      lastReceivedMessageDate: maps[0]['lastReceivedMessageDate']
     );
   }
 
@@ -131,4 +109,11 @@ class DatabaseHelper {
     );
   }
 
+  Future<Map<String, dynamic>?> getLastReceivedMessageDate() async {
+    List<Map<String, dynamic>> messages = await db!.rawQuery('SELECT * FROM contacts ORDER BY lastReceivedMessageDate DESC LIMIT 1');
+    if (messages.isNotEmpty) {
+      return messages.first;
+    }
+    return null;
+  }
 }
