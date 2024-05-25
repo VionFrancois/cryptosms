@@ -1,14 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:ffi';
 import 'dart:typed_data';
+import 'package:cryptosms/screens/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_sms/flutter_sms.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_sms_inbox/flutter_sms_inbox.dart';
 import 'db.dart';
 import 'package:webcrypto/webcrypto.dart';
-// import 'package:sms/sms.dart'
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -55,7 +54,12 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Home(),
+      theme: ThemeData(
+        primarySwatch: Colors.amber,
+      ),
+      debugShowCheckedModeBanner: false,
+
+      home: MyHomePage(),
     );
   }
 }
@@ -130,12 +134,13 @@ Future<Contact?> createContact(String phoneNumber, String name) async {
   // Verify that the contact does not exist
   if(await DatabaseHelper().getContact(phoneNumber) == null){
     // Generate new keys
+    // TODO : Generate IV
     final keyPair = await EcdhPrivateKey.generateKey(EllipticCurve.p256);
     final publicKey = await keyPair.publicKey.exportJsonWebKey();
     final privateKey = await keyPair.privateKey.exportJsonWebKey();
 
     // Create contact
-    Contact newContact = Contact(phoneNumber: phoneNumber, name: name, privateKey: json.encode(privateKey), publicKey: json.encode(publicKey), symmetricKey: "", lastReceivedMessageDate: DateTime(1970));
+    Contact newContact = Contact(phoneNumber: phoneNumber, name: name, privateKey: json.encode(privateKey), publicKey: json.encode(publicKey), symmetricKey: "", lastReceivedMessageDate: DateTime(1970), IV: "TODO : Change here", counter: 0);
     await DatabaseHelper().insertContact(newContact);
     return newContact;
   }
@@ -179,6 +184,7 @@ Future<String?> fetchKey(String phoneNumber) async{
 }
 
 void completeHandshake(Contact contact, String otherKey) async{
+  // TODO : Recevoir l'IV de l'autre et en prendre un totalement opposé ?
   // Clé publique du contact
   final publicKeyJson = json.decode(otherKey);
   final publicKey = await EcdhPublicKey.importJsonWebKey(publicKeyJson, EllipticCurve.p256);
@@ -206,8 +212,8 @@ bool checkHeader(String encodedMessage){
 
 
 void sendEncryptedMessage(Contact contact, String message) async {
-  // TODO : Mieux gérer les IV ?
-  final Uint8List iv = Uint8List.fromList('Initialization Vector'.codeUnits);
+  Uint8List iv = Uint8List.fromList(contact.IV.codeUnits);
+  incrementUint8List(iv, contact.counter);
 
   // Convertis la clé de String à List<int>
   final List<String> numbers = contact.symmetricKey.substring(1, contact.symmetricKey.length - 1).split(', ');
@@ -218,6 +224,7 @@ void sendEncryptedMessage(Contact contact, String message) async {
 
   // Message sous forme de bytes
   // TODO : Ajouter le header
+  // TODO : Concaténer l'IV au message
   final messageBytes = Uint8List.fromList(message.codeUnits);
 
   final encryptedMessageBytes = await aesGcmKey.encryptBytes(messageBytes, iv);
@@ -225,11 +232,12 @@ void sendEncryptedMessage(Contact contact, String message) async {
   final encryptedMessage = base64.encode(encryptedMessageBytes);
 
   _sendSMS(encryptedMessage, contact.phoneNumber);
+  int counter = contact.counter + 1;
+  await DatabaseHelper().updateCounter(contact.phoneNumber, counter);
 }
 
 Future<String> readEncryptedMessage(Contact contact, String encryptedMessage) async{
-  // TODO : Mieux gérer les iv ?
-  final Uint8List iv = Uint8List.fromList('Initialization Vector'.codeUnits);
+  // TODO : Lire l'IV qui est concaténé au message
 
   final List<String> numbers = contact.symmetricKey.substring(1, contact.symmetricKey.length - 1).split(', ');
   final List<int> key = numbers.map((string) => int.parse(string)).toList();
@@ -238,6 +246,8 @@ Future<String> readEncryptedMessage(Contact contact, String encryptedMessage) as
   // TODO : Retirer le header
   final messageBytes = base64.decode(encryptedMessage);
 
+  final List<int> iv = [1,2,3]; // TODO : Lire l'IV du message
+
   final decryptedMessageBytes =  await aesGcmKey.decryptBytes(messageBytes, iv);
 
   final decryptedMessage = String.fromCharCodes(decryptedMessageBytes);
@@ -245,12 +255,23 @@ Future<String> readEncryptedMessage(Contact contact, String encryptedMessage) as
   return decryptedMessage;
 }
 
+void incrementUint8List(Uint8List iv, int counter) {
+  for (int i = iv.length - 1; i >= 0; i--) {
+    if (iv[i] < 255 - counter + 1) {
+      iv[i] += counter;
+      break;
+    } else {
+      iv[i] = 0;
+    }
+  }
+}
+
 
 class SMSMonitor {
   Timer? _timer;
 
   void startMonitoring() {
-    const period = Duration(seconds: 5); // Définit la période de vérification à toutes les 7 secondes
+    const period = Duration(seconds: 5); // Définit la période de vérification
     _timer = Timer.periodic(period, (Timer t) => checkForNewSMS());
   }
 
