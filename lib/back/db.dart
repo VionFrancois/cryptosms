@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:sqflite_sqlcipher/sqflite.dart';
 
 class Contact {
@@ -7,8 +8,10 @@ class Contact {
   String publicKey;
   String symmetricKey;
   DateTime lastReceivedMessageDate;
+  String IV;
+  int counter;
 
-  Contact({required this.phoneNumber, required this.name, required this.privateKey, required this.publicKey, required this.symmetricKey, required this.lastReceivedMessageDate});
+  Contact({required this.phoneNumber, required this.name, required this.privateKey, required this.publicKey, required this.symmetricKey, required this.lastReceivedMessageDate, required this.IV, required this.counter});
 
   Map<String, dynamic> toMap() {
     return {
@@ -18,6 +21,8 @@ class Contact {
       'publicKey' : publicKey,
       'symmetricKey' : symmetricKey,
       'lastReceivedMessage' : lastReceivedMessageDate,
+      'IV' : IV,
+      'counter' : counter
     };
   }
 
@@ -47,7 +52,9 @@ class DatabaseHelper {
       privateKey TEXT,
       publicKey TEXT,
       symmetricKey TEXT,
-      lastReceivedMessageDate DATETIME
+      lastReceivedMessageDate DATETIME,
+      IV NUMBER,
+      counter NUMBER
     );
   ''');
   }
@@ -72,7 +79,9 @@ class DatabaseHelper {
         privateKey: maps[i]['privateKey'],
         publicKey: maps[i]['publicKey'],
         symmetricKey: maps[i]['symmetricKey'],
-        lastReceivedMessageDate: maps[i]['lastReceivedMessageDate']
+        lastReceivedMessageDate: maps[i]['lastReceivedMessageDate'],
+        IV: maps[i]['IV'],
+        counter: maps[i]['counter'],
       );
     });
   }
@@ -96,7 +105,9 @@ class DatabaseHelper {
       privateKey: maps[0]['privateKey'],
       publicKey: maps[0]['publicKey'],
       symmetricKey: maps[0]['symmetricKey'],
-      lastReceivedMessageDate: maps[0]['lastReceivedMessageDate']
+      lastReceivedMessageDate: maps[0]['lastReceivedMessageDate'],
+      IV: maps[0]['IV'],
+      counter: maps[0]['counter'],
     );
   }
 
@@ -116,4 +127,14 @@ class DatabaseHelper {
     }
     return null;
   }
+
+  Future<int> updateCounter(String phoneNumber, int counter) async {
+    return await db!.update(
+      'contacts', // Nom de la table
+      {'counter': counter},
+      where: 'phoneNumber = ?',
+      whereArgs: [phoneNumber],
+    );
+  }
+
 }
