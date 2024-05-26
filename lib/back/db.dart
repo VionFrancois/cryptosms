@@ -8,10 +8,8 @@ class Contact {
   String publicKey;
   String symmetricKey;
   DateTime lastReceivedMessageDate;
-  String IV;
-  int counter;
 
-  Contact({required this.phoneNumber, required this.name, required this.privateKey, required this.publicKey, required this.symmetricKey, required this.lastReceivedMessageDate, required this.IV, required this.counter});
+  Contact({required this.phoneNumber, required this.name, required this.privateKey, required this.publicKey, required this.symmetricKey, required this.lastReceivedMessageDate});
 
   Map<String, dynamic> toMap() {
     return {
@@ -20,9 +18,7 @@ class Contact {
       'privateKey': privateKey,
       'publicKey' : publicKey,
       'symmetricKey' : symmetricKey,
-      'lastReceivedMessage' : lastReceivedMessageDate,
-      'IV' : IV,
-      'counter' : counter
+      'lastReceivedMessage' : lastReceivedMessageDate
     };
   }
 
@@ -52,9 +48,7 @@ class DatabaseHelper {
       privateKey TEXT,
       publicKey TEXT,
       symmetricKey TEXT,
-      lastReceivedMessageDate DATETIME,
-      IV NUMBER,
-      counter NUMBER
+      lastReceivedMessageDate DATETIME
     );
   ''');
   }
@@ -80,8 +74,6 @@ class DatabaseHelper {
         publicKey: maps[i]['publicKey'],
         symmetricKey: maps[i]['symmetricKey'],
         lastReceivedMessageDate: maps[i]['lastReceivedMessageDate'],
-        IV: maps[i]['IV'],
-        counter: maps[i]['counter'],
       );
     });
   }
@@ -106,8 +98,6 @@ class DatabaseHelper {
       publicKey: maps[0]['publicKey'],
       symmetricKey: maps[0]['symmetricKey'],
       lastReceivedMessageDate: maps[0]['lastReceivedMessageDate'],
-      IV: maps[0]['IV'],
-      counter: maps[0]['counter'],
     );
   }
 

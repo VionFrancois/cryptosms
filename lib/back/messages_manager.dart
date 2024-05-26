@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_sms/flutter_sms.dart';
 import 'package:flutter_sms_inbox/flutter_sms_inbox.dart';
 import 'db.dart';
 import 'package:webcrypto/webcrypto.dart';
+// import 'package:cryptography/cryptography.dart';
 
 
 
@@ -80,13 +82,12 @@ Future<Contact?> createContact(String phoneNumber, String name) async {
   // Verify that the contact does not exist
   if(await DatabaseHelper().getContact(phoneNumber) == null){
     // Generate new keys
-    // TODO : Generate IV
     final keyPair = await EcdhPrivateKey.generateKey(EllipticCurve.p256);
     final publicKey = await keyPair.publicKey.exportJsonWebKey();
     final privateKey = await keyPair.privateKey.exportJsonWebKey();
 
     // Create contact
-    Contact newContact = Contact(phoneNumber: phoneNumber, name: name, privateKey: json.encode(privateKey), publicKey: json.encode(publicKey), symmetricKey: "", lastReceivedMessageDate: DateTime(1970), IV: "TODO : Change here", counter: 0);
+    Contact newContact = Contact(phoneNumber: phoneNumber, name: name, privateKey: json.encode(privateKey), publicKey: json.encode(publicKey), symmetricKey: "", lastReceivedMessageDate: DateTime(1970));
     await DatabaseHelper().insertContact(newContact);
     return newContact;
   }
@@ -99,12 +100,14 @@ void initHandshake(Contact contact){
   var message = "Hey ! J'utilise cryptoSMS pour chiffrer mes SMS, rentrons en contact et récupère le contrôle sur tes données. Télécharge l'application via F-Droid. (maybe one day)";
   var keyMessage = "cryptoSMS key : ${contact.publicKey}";
   // TODO : Chiffrement du message avec une clé connue ?
+  // TODO : Mettre le bon header
   _sendSMS(message, contact.phoneNumber);
   // Attends une seconde avant d'envoyer le 2eme message
   Future.delayed(Duration(seconds: 1), () {_sendSMS(keyMessage, contact.phoneNumber);});
 }
 
 void verifyContactsKeys() async{
+  // TODO : Commenter
   final contacts = await DatabaseHelper().getAllContacts();
   for(Contact contact in contacts){
     if(contact.symmetricKey == ""){
@@ -130,7 +133,7 @@ Future<String?> fetchKey(String phoneNumber) async{
 }
 
 void completeHandshake(Contact contact, String otherKey) async{
-  // TODO : Recevoir l'IV de l'autre et en prendre un totalement opposé ?
+  // TODO : Vérif le header
   // Clé publique du contact
   final publicKeyJson = json.decode(otherKey);
   final publicKey = await EcdhPublicKey.importJsonWebKey(publicKeyJson, EllipticCurve.p256);
@@ -145,21 +148,34 @@ void completeHandshake(Contact contact, String otherKey) async{
 }
 
 
-bool checkHeader(String encodedMessage){
+List<bool> checkHeader(String encodedMessage){
   Uint8List messageBytes = base64.decode(encodedMessage);
 
-  if (messageBytes.length >= 3) {
+  if (messageBytes.length >= 4) {
     if (messageBytes[0] == 0x12 && messageBytes[1] == 0x34 && messageBytes[2] == 0x56) {
-      return true;
+      final is_handshake = (messageBytes[4] == 0x01);
+      return [true, is_handshake];
+      // return true;
     }
   }
-  return false;
+  return [false, false];
+}
+
+Uint8List generateRandomIV() {
+  final random = Random.secure();
+  final iv = Uint8List(16);
+  for (int i = 0; i < 16; i++) {
+    iv[i] = random.nextInt(256);
+  }
+  return iv;
 }
 
 
+
 void sendEncryptedMessage(Contact contact, String message) async {
-  Uint8List iv = Uint8List.fromList(contact.IV.codeUnits);
-  incrementUint8List(iv, contact.counter);
+  // final List<int> generated_iv = await Cryptography.instance.randomBytes(16);
+  // Uint8List iv = Uint8List.fromList(generated_iv);
+  Uint8List iv = generateRandomIV();
 
   // Convertis la clé de String à List<int>
   final List<String> numbers = contact.symmetricKey.substring(1, contact.symmetricKey.length - 1).split(', ');
@@ -169,56 +185,45 @@ void sendEncryptedMessage(Contact contact, String message) async {
   final aesGcmKey = await AesGcmSecretKey.importRawKey(key);
 
   // Message sous forme de bytes
-  // TODO : Ajouter le header
-  // TODO : Concaténer l'IV au message
-  final messageBytes = Uint8List.fromList(message.codeUnits);
+  final Uint8List messageBytes = Uint8List.fromList(message.codeUnits);
+
+  final Uint8List header = Uint8List.fromList([0x12, 0x34, 0x56, 0x00]);
 
   final encryptedMessageBytes = await aesGcmKey.encryptBytes(messageBytes, iv);
 
-  final encryptedMessage = base64.encode(encryptedMessageBytes);
+  final Uint8List full_message = Uint8List.fromList([...header, ...iv, ...encryptedMessageBytes]);
 
-  _sendSMS(encryptedMessage, contact.phoneNumber);
-  int counter = contact.counter + 1;
-  await DatabaseHelper().updateCounter(contact.phoneNumber, counter);
+  final content = base64.encode(full_message);
+
+  _sendSMS(content, contact.phoneNumber);
+  // int counter = contact.counter + 1;
+  // await DatabaseHelper().updateCounter(contact.phoneNumber, counter);
 }
 
 Future<String> readEncryptedMessage(Contact contact, String encryptedMessage) async{
-  // TODO : Lire l'IV qui est concaténé au message
+  // Structure of a message
+
+  // | protocol header | is_handshake |    IV    | cyphertext |
+  // |     3 bytes     |    1 byte    | 16 bytes |    ...     |
 
   final List<String> numbers = contact.symmetricKey.substring(1, contact.symmetricKey.length - 1).split(', ');
   final List<int> key = numbers.map((string) => int.parse(string)).toList();
 
   final aesGcmKey = await AesGcmSecretKey.importRawKey(key);
-  // TODO : Retirer le header
+
   final messageBytes = base64.decode(encryptedMessage);
+  final payloadBytes = messageBytes.sublist(4); // Remove the first 4 bytes
 
-  final List<int> iv = [1,2,3]; // TODO : Lire l'IV du message
+  final Uint8List iv = payloadBytes.sublist(0, 16); // Extract the first 16 bytes
 
-  final decryptedMessageBytes =  await aesGcmKey.decryptBytes(messageBytes, iv);
+  final cyphertextBytes = payloadBytes.sublist(16); // Remove the first (4 +) 16 bytes
+
+  final decryptedMessageBytes =  await aesGcmKey.decryptBytes(cyphertextBytes, iv);
 
   final decryptedMessage = String.fromCharCodes(decryptedMessageBytes);
 
   return decryptedMessage;
 }
-
-void incrementUint8List(Uint8List iv, int counter) {
-  for (int i = iv.length - 1; i >= 0; i--) {
-    if (iv[i] < 255 - counter + 1) {
-      iv[i] += counter;
-      break;
-    } else {
-      iv[i] = 0;
-    }
-  }
-}
-
-
-
-
-
-
-
-
 
 
 
@@ -252,7 +257,7 @@ class SMSMonitor {
       int i = 0;
       while(lastMessage.lastReceivedMessage != messages[i].dateSent){
         // Si c'est un message chiffré
-        if(checkHeader(messages[i].body!)){
+        if(checkHeader(messages[i].body!)[0]){
           String? address = messages[i].address;
           // Si on a pas encore relevé ce contact
           if (!(recentAddresses.contains(address))){

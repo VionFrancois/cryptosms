@@ -13,9 +13,10 @@ import 'back/messages_manager.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // TODO : Demander un code au démarrage de l'app
   await DatabaseHelper().initDatabase("1234");
   verifyContactsKeys();
-  SMSMonitor().checkForNewSMS();
+  // SMSMonitor().checkForNewSMS();
 
   runApp(MyApp());
 }
