@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../back/db.dart';
+import '../back/messages_manager.dart';
 
 class NewContactPage extends StatefulWidget {
   @override
@@ -7,6 +9,10 @@ class NewContactPage extends StatefulWidget {
 
 class _NewContactPageState extends State<NewContactPage> {
   @override
+
+  // TODO : Changer ces valeurs avec les champs textes
+  String phoneNumber = "000000000";
+  String name = "Bob";
 
   Widget build(BuildContext context) {
     return Scaffold(
@@ -73,7 +79,12 @@ class _NewContactPageState extends State<NewContactPage> {
 
     ),
     floatingActionButton: FloatingActionButton(
-      onPressed: (){
+        onPressed: () async {
+      Contact? newContact = await createContact(phoneNumber,name);
+      if(newContact != null){
+          initHandshake(newContact);
+      }
+      print("Hello there");
     },
     tooltip: 'Enregistrer',
     child: const Icon(Icons.save, color: Colors.white),

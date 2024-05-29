@@ -18,7 +18,7 @@ class Contact {
       'privateKey': privateKey,
       'publicKey' : publicKey,
       'symmetricKey' : symmetricKey,
-      'lastReceivedMessage' : lastReceivedMessageDate
+      'lastReceivedMessageDate' : lastReceivedMessageDate.toIso8601String()
     };
   }
 

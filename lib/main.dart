@@ -27,7 +27,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  final SMSMonitor _smsMonitor = SMSMonitor();
+  // final SMSMonitor _smsMonitor = SMSMonitor();
 
   void requestSmsPermission() async {
     if (await Permission.sms.status.isDenied) {
@@ -45,12 +45,12 @@ class _MyAppState extends State<MyApp> {
   void initState(){
     super.initState();
     requestSmsPermission(); // Request permission on app initialization
-    _smsMonitor.startMonitoring();
+    // _smsMonitor.startMonitoring();
   }
 
   @override
   void dispose() {
-    _smsMonitor.stopMonitoring();
+    // _smsMonitor.stopMonitoring();
     super.dispose();
   }
 
