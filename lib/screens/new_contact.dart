@@ -84,7 +84,6 @@ class _NewContactPageState extends State<NewContactPage> {
       if(newContact != null){
           initHandshake(newContact);
       }
-      print("Hello there");
     },
     tooltip: 'Enregistrer',
     child: const Icon(Icons.save, color: Colors.white),

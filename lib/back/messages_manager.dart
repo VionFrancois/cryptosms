@@ -87,7 +87,7 @@ Future<Contact?> createContact(String phoneNumber, String name) async {
     final privateKey = await keyPair.privateKey.exportJsonWebKey();
 
     // Create contact
-    Contact newContact = Contact(phoneNumber: phoneNumber, name: name, privateKey: json.encode(privateKey), publicKey: json.encode(publicKey), symmetricKey: "", lastReceivedMessageDate: DateTime(2000, 1, 1));
+    Contact newContact = Contact(phoneNumber: phoneNumber, name: name, privateKey: json.encode(privateKey), publicKey: json.encode(publicKey), symmetricKey: "", lastReceivedMessageDate: DateTime(2000, 1, 1).toIso8601String());
     await DatabaseHelper().insertContact(newContact);
     return newContact;
   }
@@ -126,7 +126,7 @@ Future<String?> fetchKey(String phoneNumber) async{
   for (SmsMessage message in messages!) {
     var content = message.body!;
     if(content.startsWith("cSMS key : ")){
-      final key = content.substring(16, content.length);
+      final key = content.substring(11, content.length);
       return key;
     }
   }

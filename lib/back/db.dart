@@ -7,7 +7,7 @@ class Contact {
   String privateKey;
   String publicKey;
   String symmetricKey;
-  DateTime lastReceivedMessageDate;
+  String lastReceivedMessageDate;
 
   Contact({required this.phoneNumber, required this.name, required this.privateKey, required this.publicKey, required this.symmetricKey, required this.lastReceivedMessageDate});
 
@@ -18,7 +18,7 @@ class Contact {
       'privateKey': privateKey,
       'publicKey' : publicKey,
       'symmetricKey' : symmetricKey,
-      'lastReceivedMessageDate' : lastReceivedMessageDate.toIso8601String()
+      'lastReceivedMessageDate' : lastReceivedMessageDate
     };
   }
 
