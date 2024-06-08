@@ -2,24 +2,34 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import '../models/user_model.dart';
 //import '../service/databasecontact.dart';
-import '../screens/contacts.dart';
 import '../screens/new_contact.dart';
+import 'new_contact.dart';
 //import '../widgets/conversation_list.dart';
+import '../back/db.dart';
 
-class Contact {
-  final String name;
-  final String email;
+// TODO : Dessin de chaine dans la liste des contacts en fonction de l'échange de clés ?
 
-  Contact({required this.name, required this.email});
-}
-
-@override
 class Contacts extends StatefulWidget {
   @override
   _ContactsState createState() => _ContactsState();
 }
 
-class _ContactsState extends State<Contacts> {
+class _ContactsState extends State<Contacts>{
+  // Liste de contacts pour l'affichage
+  List<Contact> _contacts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchContacts();
+  }
+
+  Future<void> _fetchContacts() async {
+    List<Contact> contacts = await DatabaseHelper().getAllContacts();
+    setState(() {
+      _contacts = contacts;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,41 +47,38 @@ class _ContactsState extends State<Contacts> {
                   children: <Widget>[
                     Text(
                       "Contacts",
-                      style:
-                          TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                      style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
                     ),
-                    Container(
-                      padding:
-                          EdgeInsets.only(left: 8, right: 8, top: 2, bottom: 2),
-                      height: 30,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(30),
-                        color: Colors.pink[50],
-                      ),
-                      child: Row(
-                        children: <Widget>[
-                         Icon(
-                          Icons.add,
-                          color: Colors.pink,
-                            size: 20,
-                        ),SizedBox(
-                           width: 2,
-                          ),
-                          Text(
-                           "Add New",
-                           style: TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.bold),
-                          ),
-
-                      GestureDetector(
-                        onTap:(){
-                            Navigator.push(context, MaterialPageRoute(builder: (context){
-                                return NewContactPage();
-                            }));
-                          },
-                      ),
-
-                        ],
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (context) {
+                          return SelectContactPage();
+                        }));
+                      },
+                      child: Container(
+                        padding: EdgeInsets.only(left: 8, right: 8, top: 2, bottom: 2),
+                        height: 30,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(30),
+                          color: Colors.pink[50],
+                        ),
+                        child: Row(
+                          children: <Widget>[
+                            Icon(
+                              Icons.add,
+                              color: Colors.pink,
+                              size: 20,
+                            ),
+                            SizedBox(
+                              width: 2,
+                            ),
+                            Text(
+                              "Add New",
+                              style: TextStyle(
+                                  fontSize: 14, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
                       ),
                     )
                   ],
@@ -96,6 +103,21 @@ class _ContactsState extends State<Contacts> {
                       borderRadius: BorderRadius.circular(20),
                       borderSide: BorderSide(color: Colors.grey.shade100)),
                 ),
+              ),
+            ),
+            // Afficher la liste des contacts
+            Padding(
+              padding: EdgeInsets.all(16.0),
+              child: ListView.builder(
+                shrinkWrap: true, // Important to make ListView inside SingleChildScrollView
+                physics: NeverScrollableScrollPhysics(), // Disable ListView scrolling
+                itemCount: _contacts.length,
+                itemBuilder: (context, index) {
+                  Contact contact = _contacts[index];
+                  return ListTile(
+                    title: Text(contact.name),
+                  );
+                },
               ),
             ),
           ],

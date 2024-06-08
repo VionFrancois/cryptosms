@@ -1,97 +1,115 @@
 import 'package:flutter/material.dart';
+import 'package:contacts_service/contacts_service.dart' as contacts_service;
+import 'package:permission_handler/permission_handler.dart';
 import '../back/db.dart';
 import '../back/messages_manager.dart';
 
-class NewContactPage extends StatefulWidget {
+class SelectContactPage extends StatefulWidget {
   @override
-  _NewContactPageState createState() => _NewContactPageState();
+  _SelectContactPageState createState() => _SelectContactPageState();
 }
 
-class _NewContactPageState extends State<NewContactPage> {
+class _SelectContactPageState extends State<SelectContactPage> {
+  List<contacts_service.Contact> _contacts = [];
+  contacts_service.Contact? _selectedContact;
+
   @override
+  void initState() {
+    super.initState();
+    _requestPermission();
+  }
 
-  // TODO : Changer ces valeurs avec les champs textes
-  String phoneNumber = "000000000";
-  String name = "Bob";
+  Future<void> _requestPermission() async {
+    if (await Permission.contacts.request().isGranted) {
+      _fetchContacts();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Contacts permission is required to proceed.')),
+      );
+    }
+  }
 
+  Future<void> _fetchContacts() async {
+    Iterable<contacts_service.Contact> contacts = await contacts_service.ContactsService.getContacts();
+    setState(() {
+      _contacts = contacts.toList();
+    });
+  }
+
+  void _selectContact(contacts_service.Contact contact) {
+    setState(() {
+      _selectedContact = contact;
+    });
+    _showConfirmationDialog(contact);
+  }
+
+  Future<void> _saveContactToDatabase() async {
+    if (_selectedContact != null && _selectedContact!.phones!.isNotEmpty) {
+      String phoneNumber = _selectedContact!.phones!.first.value ?? "000000000";
+      String name = _selectedContact!.displayName ?? "Contact";
+
+      // Appelle ta méthode pour sauvegarder le contact dans la base de données
+      Contact? newContact = await createContact(phoneNumber, name);
+      if (newContact != null) {
+        initHandshake(newContact);
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please select a contact with a phone number.')),
+      );
+    }
+  }
+
+  void _showConfirmationDialog(contacts_service.Contact contact) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Confirm Contact Addition'),
+          content: Text('Do you want to add ${contact.displayName} as a contact? ${contact.displayName} will receive an SMS of invitation'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _saveContactToDatabase();
+              },
+              child: Text('Confirm'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("New Contact"),
+        title: Text("Select Contact"),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(Icons.person),
-            Text('Prénom'),
-            TextFormField(
-              decoration: InputDecoration(
-              //labelText: 'Prénom',
-              //prefixIcon:
-              hintText: 'Entrez le prénom',
-              ),
-            ),
-            SizedBox(height: 16),
-            Text('Nom'),
-            TextFormField(
-              decoration: InputDecoration(
-                hintText: 'Entrez le nom',
-              ),
-            ),
-            SizedBox(height: 16),
-            Icon(Icons.phone),
-            Text('Téléphone'),
-            Row(
-              children: [
-                DropdownButton<String>(
-                  value: 'BE +32', // Country code
-                  onChanged: (newValue) {},
-                  items: <String>['BE +32', 'FR +33', '+1', '+44']
-                      .map<DropdownMenuItem<String>>((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
-                    );
-                  }).toList(),
-                ),
-                SizedBox(width: 8),
-                Expanded(
-                  child: TextFormField(
-                    decoration: InputDecoration(
-                      hintText: 'Entrez le numéro de téléphone',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () {},
-              child: Text('Ajouter des informations'),
-            ),
-
-
-
-      ]
+      body: _contacts.isEmpty
+          ? Center(child: CircularProgressIndicator())
+          : ListView.builder(
+        itemCount: _contacts.length,
+        itemBuilder: (context, index) {
+          contacts_service.Contact contact = _contacts[index];
+          return ListTile(
+            title: Text(contact.displayName ?? 'No name'),
+            subtitle: Text(contact.phones!.isNotEmpty
+                ? contact.phones!.first.value ?? 'No phone number'
+                : 'No phone number'),
+            onTap: () {
+              _selectContact(contact);
+            },
+          );
+        },
       ),
-
-    ),
-    floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-      Contact? newContact = await createContact(phoneNumber,name);
-      if(newContact != null){
-          initHandshake(newContact);
-      }
-    },
-    tooltip: 'Enregistrer',
-    child: const Icon(Icons.save, color: Colors.white),
-    backgroundColor: Colors.blue,
-    ),
-
     );
-
-
   }
 }

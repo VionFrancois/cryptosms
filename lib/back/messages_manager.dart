@@ -98,13 +98,12 @@ Future<Contact?> createContact(String phoneNumber, String name) async {
 
 void initHandshake(Contact contact){
   var message = "Hey ! J'utilise cryptoSMS pour chiffrer mes SMS, rentrons en contact et récupère le contrôle sur tes données. Télécharge l'application via F-Droid. (maybe one day)";
-  // TODO : Mettre le bon header dans keyMessage
   var keyMessage = "cSMS key : ${contact.publicKey}";
   // final Uint8List header = Uint8List.fromList([0x12, 0x34, 0x56, 0x00]);
-  // TODO : Chiffrement du message avec une clé connue ?
   _sendSMS(message, contact.phoneNumber);
   // Attends une seconde avant d'envoyer le 2eme message
-  Future.delayed(Duration(seconds: 1), () {_sendSMS(keyMessage, contact.phoneNumber);});
+  // Future.delayed(Duration(seconds: 2), () {_sendSMS(keyMessage, contact.phoneNumber);});
+  _sendSMS(keyMessage, contact.phoneNumber);
 }
 
 void verifyContactsKeys() async{
