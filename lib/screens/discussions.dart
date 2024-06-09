@@ -1,8 +1,20 @@
 import 'package:flutter/material.dart';
-import '/screens/home_page.dart';
-import '../screens/discussions.dart';
+import '../screens/chat_detail_page.dart';
 import '../models/user_model.dart';
-import '../widgets/conversation_list.dart';
+
+class ChatUsers {
+  final String name;
+  final String messageText;
+  final String imageURL;
+  final String time;
+
+  ChatUsers({
+    required this.name,
+    required this.messageText,
+    required this.imageURL,
+    required this.time,
+  });
+}
 
 class ChatPage extends StatefulWidget {
   @override
@@ -10,117 +22,143 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
-  List<ChatUsers> chatUsers = [
-    ChatUsers(
-        name: "Jane Russel",
-        messageText: "Awesome Setup",
-        imageURL: "images/user.jpg",
-        time: "Now"),
-    ChatUsers(
-        name: "Glady's Murphy",
-        messageText: "That's Great",
-        imageURL: "images/userImage2.jpeg",
-        time: "Yesterday"),
-    ChatUsers(
-        name: "Jorge Henry",
-        messageText: "Hey where are you?",
-        imageURL: "images/userImage3.jpeg",
-        time: "31 Mar"),
-    ChatUsers(
-        name: "Philip Fox",
-        messageText: "Busy! Call me in 20 mins",
-        imageURL: "images/userImage4.jpeg",
-        time: "28 Mar"),
-    ChatUsers(
-        name: "Debra Hawkins",
-        messageText: "Thankyou, It's awesome",
-        imageURL: "images/userImage5.jpeg",
-        time: "23 Mar"),
-    ChatUsers(
-        name: "Jacob Pena",
-        messageText: "will update you in evening",
-        imageURL: "images/userImage6.jpeg",
-        time: "17 Mar"),
+  List<ChatUsers> chatUsers = [];
 
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _fetchChatUsers();
+  }
+
+  Future<void> _fetchChatUsers() async {
+    // Remplacez cette partie par l'appel à votre fonction externe pour récupérer les utilisateurs de chat
+    List<ChatUsers> fetchedChatUsers = [
+      ChatUsers(
+          name: "Jane Russel",
+          messageText: "Awesome Setup",
+          imageURL: "images/user.jpg",
+          time: "Now"),
+      ChatUsers(
+          name: "Glady's Murphy",
+          messageText: "That's Great",
+          imageURL: "images/userImage2.jpeg",
+          time: "Yesterday"),
+      ChatUsers(
+          name: "Jorge Henry",
+          messageText: "Hey where are you?",
+          imageURL: "images/userImage3.jpeg",
+          time: "31 Mar"),
+      ChatUsers(
+          name: "Philip Fox",
+          messageText: "Busy! Call me in 20 mins",
+          imageURL: "images/userImage4.jpeg",
+          time: "28 Mar"),
+      ChatUsers(
+          name: "Debra Hawkins",
+          messageText: "Thank you, It's awesome",
+          imageURL: "images/userImage5.jpeg",
+          time: "23 Mar"),
+      ChatUsers(
+          name: "Jacob Pena",
+          messageText: "will update you in the evening",
+          imageURL: "images/userImage6.jpeg",
+          time: "17 Mar"),
+    ];
+
+    setState(() {
+      chatUsers = fetchedChatUsers;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        elevation: 0,
+        automaticallyImplyLeading: false,  // Désactive le bouton de retour
+        backgroundColor: Colors.white,
+        flexibleSpace: SafeArea(
+          child: Container(
+            padding: EdgeInsets.only(right: 16),
+            child: Row(
+              children: <Widget>[
+                // Suppression de l'icône de retour et ajout de marge
+                SizedBox(width: 16),
+                Text(
+                  "Conversations",
+                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                ),
+                // Suppression des icônes de recherche et des trois petits points
+              ],
+            ),
+          ),
+        ),
+      ),
       body: SingleChildScrollView(
         physics: BouncingScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-
-            SafeArea(
-              child: Padding(
-                padding: EdgeInsets.only(left: 16, right: 16, top: 10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: <Widget>[
-                    Text(
-                      "Conversations",
-                      style:
-                          TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-                    ),
-                    Container(
-                      padding:
-                          EdgeInsets.only(left: 8, right: 8, top: 2, bottom: 2),
-                      height: 30,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(30),
-                        color: Colors.pink[50],
-                      ),
-                      child: Row(
-                        children: <Widget>[
-                          Icon(
-                            Icons.add,
-                            color: Colors.pink,
-                            size: 20,
-                          ),
-                          SizedBox(
-                            width: 2,
-                          ),
-                          //Text("Add New",style: TextStyle(fontSize: 14,fontWeight: FontWeight.bold),),
-                        ],
-                      ),
-                    )
-                  ],
-                ),
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.only(top: 16, left: 16, right: 16),
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: "Search...",
-                  hintStyle: TextStyle(color: Colors.grey.shade600),
-                  prefixIcon: Icon(
-                    Icons.search,
-                    color: Colors.grey.shade600,
-                    size: 20,
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey.shade100,
-                  contentPadding: EdgeInsets.all(8),
-                  enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide(color: Colors.grey.shade100)),
-                ),
-              ),
-            ),
             ListView.builder(
               itemCount: chatUsers.length,
               shrinkWrap: true,
               padding: EdgeInsets.only(top: 16),
               physics: NeverScrollableScrollPhysics(),
               itemBuilder: (context, index) {
-                return ConversationList(
-                  name: chatUsers[index].name,
-                  messageText: chatUsers[index].messageText,
-                  imageUrl: chatUsers[index].imageURL,
-                  time: chatUsers[index].time,
-                  isMessageRead: (index == 0 || index == 3) ? true : false,
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) {
+                      return ChatDetailPage();
+                    }));
+                  },
+                  child: Container(
+                    padding: EdgeInsets.only(left: 16, right: 16, top: 10, bottom: 10),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: Colors.grey.shade300),
+                      ),
+                    ),
+                    child: Row(
+                      children: <Widget>[
+                        // Suppression du CircleAvatar
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: Container(
+                            color: Colors.transparent,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Text(
+                                  chatUsers[index].name,
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                                SizedBox(height: 6),
+                                Text(
+                                  chatUsers[index].messageText,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey.shade600,
+                                    // fontWeight: chatUsers[index].isMessageRead
+                                    //     ? FontWeight.bold
+                                    //     : FontWeight.normal,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Text(
+                          chatUsers[index].time,
+                          style: TextStyle(
+                            fontSize: 12,
+                            // fontWeight: chatUsers[index].isMessageRead
+                            //     ? FontWeight.bold
+                            //     : FontWeight.normal,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 );
               },
             ),

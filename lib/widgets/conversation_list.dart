@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../screens/char_detail_page.dart';
+import '../screens/chat_detail_page.dart';
 class ConversationList extends StatefulWidget{
   String name;
   String messageText;
@@ -30,7 +30,7 @@ class _ConversationListState extends State<ConversationList> {
               child: Row(
                 children: <Widget>[
                   CircleAvatar(
-                    backgroundImage: NetworkImage(widget.imageUrl),
+                    // backgroundImage: NetworkImage(widget.imageUrl),
                     maxRadius: 30,
                   ),
                   SizedBox(width: 16,),
