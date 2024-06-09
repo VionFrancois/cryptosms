@@ -16,7 +16,10 @@ Future<void> main() async {
   // TODO : Demander un code au démarrage de l'app
   await DatabaseHelper().initDatabase("1234");
   verifyContactsKeys();
-  // SMSMonitor().checkForNewSMS();
+
+  SMSMonitor smsMonitor = SMSMonitor();
+  // smsMonitor.checkForNewSMS();
+  smsMonitor.startMonitoring();
 
   runApp(MyApp());
 }

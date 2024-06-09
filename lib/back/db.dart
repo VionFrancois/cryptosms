@@ -110,13 +110,20 @@ class DatabaseHelper {
     );
   }
 
-  Future<Map<String, dynamic>?> getLastReceivedMessageDate() async {
-    List<Map<String, dynamic>> messages = await db!.rawQuery('SELECT * FROM contacts ORDER BY lastReceivedMessageDate DESC LIMIT 1');
-    if (messages.isNotEmpty) {
-      return messages.first;
+  Future<String?> getLastReceivedMessageDate() async {
+    try {
+      List<Map<String, dynamic>> messages = await db!.rawQuery(
+          'SELECT lastReceivedMessageDate FROM contacts ORDER BY lastReceivedMessageDate DESC LIMIT 1');
+
+      if (messages.isNotEmpty) {
+        return messages.first['lastReceivedMessageDate'] as String?;
+      }
+    } catch (e) {
+      print('Erreur lors de la récupération de la date du dernier message reçu: $e');
     }
-    return null;
+    return null; // Si aucun résultat n'est trouvé ou en cas d'erreur
   }
+
 
   Future<int> updateCounter(String phoneNumber, int counter) async {
     return await db!.update(

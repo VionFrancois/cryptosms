@@ -150,22 +150,18 @@ void completeHandshake(Contact contact, String otherKey) async{
 
 
 List<bool> checkHeader(String encodedMessage){
-  if(encodedMessage.substring(0,4) == "cSMS "){
-    if(encodedMessage.substring(5,8) == "key"){
-      return [true,true];
+  if(encodedMessage.length > 5){
+    if(encodedMessage.substring(0,5) == "cSMS "){
+
+      if(encodedMessage.length > 9){
+        if(encodedMessage.substring(5,8) == "key"){
+          return [true,true];
+        }
+      }
+      return [true,false];
     }
-    return [true,false];
   }
   return [false,false];
-  Uint8List messageBytes = base64.decode(encodedMessage);
-  if (messageBytes.length >= 4) {
-    if (messageBytes[0] == 0x12 && messageBytes[1] == 0x34 && messageBytes[2] == 0x56) {
-      final is_handshake = (messageBytes[4] == 0x01);
-      return [true, is_handshake];
-      // return true;
-    }
-  }
-  return [false, false];
 }
 
 Uint8List generateRandomIV() {
@@ -241,7 +237,7 @@ class SMSMonitor {
   Timer? _timer;
 
   void startMonitoring() {
-    const period = Duration(seconds: 5); // Définit la période de vérification
+    const period = Duration(seconds: 10); // Définit la période de vérification
     _timer = Timer.periodic(period, (Timer t) => checkForNewSMS());
   }
 
@@ -250,49 +246,62 @@ class SMSMonitor {
   }
 
 
-  var lastMessage;
+  var lastMessageDate;
 
   Future<List<Contact>?> checkForNewSMS() async {
-    var recentAddresses;
-    try{
+    List<String> recentAddresses = [];
+    List<Contact> recentContacts = []; // Initialiser recentContacts ici
+    try {
       int start = 0;
-      int count = 5;
+      int count = 50;
       List<SmsMessage> messages = await SmsQuery().querySms(kinds: [SmsQueryKind.inbox], start: start, count: count);
-      lastMessage ??= DatabaseHelper().getLastReceivedMessageDate(); // Si lastMessage == null, on va le fetch
-      int i = 0;
-      while(lastMessage.lastReceivedMessage != messages[i].dateSent){
-        // Si c'est un message chiffré
-        if(checkHeader(messages[i].body!)[0]){
-          String? address = messages[i].address;
-          // Si on a pas encore relevé ce contact
-          if (!(recentAddresses.contains(address))){
-            recentAddresses.add(address);
+
+      String? lastMessageDate = await DatabaseHelper().getLastReceivedMessageDate(); // Si lastMessage == null, on va le fetch
+
+      if (lastMessageDate != null) {
+        int i = 0;
+        while (i < messages.length && messages[i].dateSent != null && lastMessageDate != messages[i].dateSent.toString()) {
+          // Si c'est un message chiffré
+          if (messages[i].body != null && checkHeader(messages[i].body!)[0]) {
+            String? address = messages[i].address;
+            if (address != null) {
+              // Si on n'a pas encore relevé ce contact
+              if (!recentAddresses.contains(address)) {
+                recentAddresses.add(address);
+                print("NOUVEAU SMS DE : $address");
+              }
+            }
+          }
+          i++;
+          if (i == count) {
+            start += count;
+            count += count;
+            messages = await SmsQuery().querySms(start: start, count: count);
+            i = 0;
           }
         }
-        i += 1;
-        if (i == count){
-          start = start + count;
-          count = count + count;
-          messages = await SmsQuery().querySms(start: start, count: count);
-          i = 0;
-        }
       }
-
     } catch (e) {
       print('Erreur lors de la récupération des SMS: $e');
     }
 
-    // TODO : Génère des erreurs quand c'est null
     if (recentAddresses.isNotEmpty) {
-      var recentContacts;
       for (String address in recentAddresses) {
-        recentContacts.add(await DatabaseHelper().getContact(address));
+        try {
+          Contact? contact = await DatabaseHelper().getContact(address);
+          if (contact != null) {
+            recentContacts.add(contact);
+          }
+        } catch (e) {
+          print('Erreur lors de la récupération du contact: $e');
+        }
       }
       return recentContacts;
-    } else{
+    } else {
       return null;
     }
   }
+
 
 
 }
