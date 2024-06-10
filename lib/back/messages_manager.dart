@@ -236,9 +236,8 @@ Future<List<List<dynamic>>> fetchConversation(Contact contact) async {
 
         try{
           decryptedMessage = await readEncryptedMessage(contact, content);
-          bool isReceived = message.kind == SmsQueryKind.inbox;
+          bool isReceived = message.kind == SmsMessageKind.received;
 
-          print(decryptedMessage);
           conversation.add([decryptedMessage, isReceived, message.date]);
         }
         catch(e){
