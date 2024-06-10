@@ -172,10 +172,7 @@ Uint8List generateRandomIV() {
 
 
 void sendEncryptedMessage(Contact contact, String message) async {
-  // final List<int> generated_iv = await Cryptography.instance.randomBytes(16);
-  // Uint8List iv = Uint8List.fromList(generated_iv);
   Uint8List iv = generateRandomIV();
-
   // Convertis la clé de String à List<int>
   final List<String> numbers = contact.symmetricKey.substring(1, contact.symmetricKey.length - 1).split(', ');
   final List<int> key = numbers.map((string) => int.parse(string)).toList();
@@ -186,34 +183,33 @@ void sendEncryptedMessage(Contact contact, String message) async {
   // Message sous forme de bytes
   final Uint8List messageBytes = Uint8List.fromList(message.codeUnits);
 
-  final Uint8List header = Uint8List.fromList([0x12, 0x34, 0x56, 0x00]);
-
   final encryptedMessageBytes = await aesGcmKey.encryptBytes(messageBytes, iv);
 
-  final Uint8List full_message = Uint8List.fromList([...header, ...iv, ...encryptedMessageBytes]);
+  final Uint8List full_message = Uint8List.fromList([...iv, ...encryptedMessageBytes]);
 
-  final content = base64.encode(full_message);
+  final content = "cSMS " + base64.encode(full_message);
 
   _sendSMS(content, contact.phoneNumber);
+
+  DatabaseHelper().newMessage(contact.phoneNumber, message, DateTime.now());
 }
 
 Future<String> readEncryptedMessage(Contact contact, String encryptedMessage) async{
   // Structure of a message
 
-  // | protocol header | is_handshake |    IV    | cyphertext |
-  // |     3 bytes     |    1 byte    | 16 bytes |    ...     |
+  // |   header   |    IV    | cyphertext |
+  // | cSMS (key) | 16 bytes |    ...     |
 
   final List<String> numbers = contact.symmetricKey.substring(1, contact.symmetricKey.length - 1).split(', ');
   final List<int> key = numbers.map((string) => int.parse(string)).toList();
 
   final aesGcmKey = await AesGcmSecretKey.importRawKey(key);
 
-  final messageBytes = base64.decode(encryptedMessage);
-  final payloadBytes = messageBytes.sublist(4); // Remove the first 4 bytes
+  final payloadBytes = base64.decode(encryptedMessage.substring(5)); // Remove the header
 
   final Uint8List iv = payloadBytes.sublist(0, 16); // Extract the first 16 bytes
 
-  final cyphertextBytes = payloadBytes.sublist(16); // Remove the first (4 +) 16 bytes
+  final cyphertextBytes = payloadBytes.sublist(16); // Remove the first 16 bytes
 
   final decryptedMessageBytes =  await aesGcmKey.decryptBytes(cyphertextBytes, iv);
 
@@ -237,16 +233,16 @@ Future<List<List<dynamic>>> fetchConversation(Contact contact) async {
       List<bool> header = checkHeader(content);
       if (header[0] && !header[1]) {
         String? decryptedMessage;
-        if (message.kind == SmsQueryKind.inbox) {
-          decryptedMessage = await readEncryptedMessage(contact, content);
-        } else if (message.kind == SmsMessageKind.sent) {
-          decryptedMessage = await readEncryptedMessage(contact, content);
-        }
 
-        print(decryptedMessage);
-        if (decryptedMessage != null) {
+        try{
+          decryptedMessage = await readEncryptedMessage(contact, content);
           bool isReceived = message.kind == SmsQueryKind.inbox;
-          conversation.add([decryptedMessage, isReceived]);
+
+          print(decryptedMessage);
+          conversation.add([decryptedMessage, isReceived, message.date]);
+        }
+        catch(e){
+          print("Erreur lors du déchiffrement d'un message comprenant un header correct");
         }
       }
     }
@@ -254,7 +250,8 @@ Future<List<List<dynamic>>> fetchConversation(Contact contact) async {
     print('Erreur lors de la récupération des messages chiffrés: $e');
   }
 
-  // conversation.sort((a, b) => a.date!.compareTo(b.date!)); TODO : Trier ici
+  // conversation.sort([a, b => a.date!.compareTo(b.date!));
+  conversation.sort((a, b) => a[2].compareTo(b[2])); // a[2] et b[2] sont les dates
 
   return conversation;
 }
@@ -300,7 +297,6 @@ class SMSMonitor {
               // Si on n'a pas encore relevé ce contact
               if (!recentAddresses.contains(address)) {
                 recentAddresses.add(address);
-                print("NOUVEAU SMS DE : $address");
                 await DatabaseHelper().newMessage(address, messages[i].body!, messages[i].date!);
               }
             }

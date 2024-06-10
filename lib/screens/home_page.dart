@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../screens/contacts.dart';
 import 'discussions.dart';
-import '../screens/chat_detail_page.dart'; // Assurez-vous que ce fichier contient ChatPage
+import '../screens/messages.dart'; // Assurez-vous que ce fichier contient ChatPage
 
 class MyHomePage extends StatefulWidget {
   @override
@@ -12,9 +12,8 @@ class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
 
   static List<Widget> _widgetOptions = <Widget>[
-    ChatPage(), // Assurez-vous que ChatPage est la bonne classe pour les discussions
-    Contacts(), // Assurez-vous que Contacts est la bonne classe pour les contacts
-    Text('Profile'), // Remplacez ceci par votre widget de profil réel
+    ChatPage(),
+    Contacts(),
   ];
 
   void _onItemTapped(int index) {
@@ -28,7 +27,6 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text("CryptoSMS"),
-        // Supprimer les actions pour enlever la loupe et les trois petits points
         actions: [],
       ),
       body: _widgetOptions.elementAt(_selectedIndex),
@@ -46,11 +44,7 @@ class _MyHomePageState extends State<MyHomePage> {
           BottomNavigationBarItem(
             label: 'Contacts',
             icon: Icon(Icons.contacts),
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.account_box),
-            label: "Profile",
-          ),
+          )
         ],
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,

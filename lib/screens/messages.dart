@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../models/chatmessage_model.dart';
 import '../back/db.dart';
 import '../back/messages_manager.dart';
@@ -15,6 +16,7 @@ class ChatDetailPage extends StatefulWidget {
 class _ChatDetailPageState extends State<ChatDetailPage> {
   List<ChatMessage> messages = [];
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _messageController = TextEditingController();
 
   @override
   void initState() {
@@ -25,14 +27,16 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   Future<void> _fetchMessages() async {
     try {
       List<List<dynamic>> fetchedConversation = await fetchConversation(widget.contact);
-      if(fetchedConversation.isNotEmpty){
+      if (fetchedConversation.isNotEmpty) {
         List<ChatMessage> fetchedMessages = fetchedConversation.map((tuple) {
-        String messageContent = tuple[0] as String;
-        bool isReceived = tuple[1] as bool;
-        return ChatMessage(
-          messageContent: messageContent,
-          messageType: isReceived ? "receiver" : "sender",
-        );
+          String messageContent = tuple[0] as String;
+          bool isReceived = tuple[1] as bool;
+          String date = DateFormat('HH:mm').format(tuple[2] as DateTime);
+          return ChatMessage(
+              messageContent: messageContent,
+              messageType: isReceived ? "receiver" : "sender",
+              date: date
+          );
         }).toList();
         setState(() {
           messages = fetchedMessages;
@@ -43,6 +47,25 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
       }
     } catch (e) {
       print('Erreur lors de la récupération des messages: $e');
+    }
+  }
+
+  void _sendMessage() async {
+    String message = _messageController.text;
+    if (message.isNotEmpty) {
+      try {
+        sendEncryptedMessage(widget.contact, message);
+        setState(() {
+          String formattedDate = DateFormat('HH:mm').format(DateTime.now());
+          messages.add(ChatMessage(messageContent: message, messageType: "sender", date: formattedDate));
+          _messageController.clear();
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+        });
+      } catch (e) {
+        print('Erreur lors de l\'envoi du message: $e');
+      }
     }
   }
 
@@ -105,9 +128,19 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                             : Colors.blue[200]),
                       ),
                       padding: EdgeInsets.all(16),
-                      child: Text(
-                        messages[index].messageContent,
-                        style: TextStyle(fontSize: 15),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            messages[index].messageContent,
+                            style: TextStyle(fontSize: 15),
+                          ),
+                          SizedBox(height: 5),
+                          Text(
+                            messages[index].date,
+                            style: TextStyle(fontSize: 10, color: Colors.grey),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -126,6 +159,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                 children: <Widget>[
                   Expanded(
                     child: TextField(
+                      controller: _messageController,
                       decoration: InputDecoration(
                         hintText: "Write message...",
                         hintStyle: TextStyle(color: Colors.black54),
@@ -135,7 +169,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                   ),
                   SizedBox(width: 15),
                   FloatingActionButton(
-                    onPressed: () {},
+                    onPressed: _sendMessage,
                     child: Icon(
                       Icons.send,
                       color: Colors.white,

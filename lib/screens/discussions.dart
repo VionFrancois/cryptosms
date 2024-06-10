@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../screens/chat_detail_page.dart';
+import '../screens/messages.dart';
 import '../back/db.dart';
 
 String formatElapsedTime(String dateString) {
