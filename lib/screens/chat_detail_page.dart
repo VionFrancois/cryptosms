@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/chatmessage_model.dart';
 import '../back/db.dart';
+import '../back/messages_manager.dart';
 
 class ChatDetailPage extends StatefulWidget {
   final Contact contact;
@@ -22,23 +23,27 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   }
 
   Future<void> _fetchMessages() async {
-    // Remplacez cette partie par l'appel à votre fonction externe pour récupérer les messages
-    List<ChatMessage> fetchedMessages = [
-      ChatMessage(messageContent: "Hello, Will", messageType: "receiver"),
-      ChatMessage(messageContent: "How have you been?", messageType: "receiver"),
-      ChatMessage(messageContent: "Hey Kriss, I am doing fine dude. wbu?", messageType: "sender"),
-      ChatMessage(messageContent: "ehhhh, doing OK.", messageType: "receiver"),
-      ChatMessage(messageContent: "Is there any thing wrong?", messageType: "sender"),
-    ];
-
-    setState(() {
-      messages = fetchedMessages;
-    });
-
-    // Scroll to the bottom when messages are fetched
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
-    });
+    try {
+      List<List<dynamic>> fetchedConversation = await fetchConversation(widget.contact);
+      if(fetchedConversation.isNotEmpty){
+        List<ChatMessage> fetchedMessages = fetchedConversation.map((tuple) {
+        String messageContent = tuple[0] as String;
+        bool isReceived = tuple[1] as bool;
+        return ChatMessage(
+          messageContent: messageContent,
+          messageType: isReceived ? "receiver" : "sender",
+        );
+        }).toList();
+        setState(() {
+          messages = fetchedMessages;
+        });
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+        });
+      }
+    } catch (e) {
+      print('Erreur lors de la récupération des messages: $e');
+    }
   }
 
   @override

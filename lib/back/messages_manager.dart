@@ -2,13 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:math';
-import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_sms/flutter_sms.dart';
 import 'package:flutter_sms_inbox/flutter_sms_inbox.dart';
 import 'db.dart';
 import 'package:webcrypto/webcrypto.dart';
-// import 'package:cryptography/cryptography.dart';
-
 
 
 
@@ -56,7 +54,7 @@ import 'package:webcrypto/webcrypto.dart';
 Future<List<SmsMessage>?> _getIncomingSMS(String address) async {
   try {
     // Start et count possible
-    List<SmsMessage> messages = await SmsQuery().querySms(kinds:[SmsQueryKind.inbox] , address: "+${address}");
+    List<SmsMessage> messages = await SmsQuery().querySms(kinds:[SmsQueryKind.inbox] , address: address);
     return messages;
   } catch (e) {
     print('Erreur lors de la récupération des SMS: $e');
@@ -133,8 +131,6 @@ Future<String?> fetchKey(String phoneNumber) async{
 }
 
 void completeHandshake(Contact contact, String otherKey) async{
-  // TODO : Vérif le header
-  // Ah bon ?
   // Clé publique du contact
   final publicKeyJson = json.decode(otherKey);
   final publicKey = await EcdhPublicKey.importJsonWebKey(publicKeyJson, EllipticCurve.p256);
@@ -227,6 +223,42 @@ Future<String> readEncryptedMessage(Contact contact, String encryptedMessage) as
 }
 
 
+Future<List<List<dynamic>>> fetchConversation(Contact contact) async {
+  List<List<dynamic>> conversation = [];
+
+  try {
+    List<SmsMessage> messages = await SmsQuery().querySms(
+      kinds: [SmsQueryKind.inbox, SmsQueryKind.sent],
+      address: contact.phoneNumber,
+    );
+
+    for (var message in messages) {
+      var content = message.body!;
+      List<bool> header = checkHeader(content);
+      if (header[0] && !header[1]) {
+        String? decryptedMessage;
+        if (message.kind == SmsQueryKind.inbox) {
+          decryptedMessage = await readEncryptedMessage(contact, content);
+        } else if (message.kind == SmsMessageKind.sent) {
+          decryptedMessage = await readEncryptedMessage(contact, content);
+        }
+
+        print(decryptedMessage);
+        if (decryptedMessage != null) {
+          bool isReceived = message.kind == SmsQueryKind.inbox;
+          conversation.add([decryptedMessage, isReceived]);
+        }
+      }
+    }
+  } catch (e) {
+    print('Erreur lors de la récupération des messages chiffrés: $e');
+  }
+
+  // conversation.sort((a, b) => a.date!.compareTo(b.date!)); TODO : Trier ici
+
+  return conversation;
+}
+
 
 
 
@@ -238,7 +270,7 @@ class SMSMonitor {
 
   void startMonitoring() {
     const period = Duration(seconds: 10); // Définit la période de vérification
-    _timer = Timer.periodic(period, (Timer t) => checkForNewSMS());
+    _timer = Timer.periodic(period, (Timer t) {checkForNewSMS(); verifyContactsKeys();});
   }
 
   void stopMonitoring() {

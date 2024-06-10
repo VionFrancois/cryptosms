@@ -13,7 +13,7 @@ String formatElapsedTime(String dateString) {
   } else if (difference.inHours < 24) {
     return '${difference.inHours} hours ago';
   } else {
-    return DateFormat('d MMM').format(messageDate); // Format sans l'année
+    return DateFormat('d MMM').format(messageDate);
   }
 }
 
