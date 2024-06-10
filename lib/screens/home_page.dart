@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../screens/contacts.dart';
-import '../screens/discussions.dart'; // Assurez-vous que ce fichier contient ChatPage
-import '../screens/home_page.dart';
+import 'discussions.dart';
+import '../screens/chat_detail_page.dart'; // Assurez-vous que ce fichier contient ChatPage
 
 class MyHomePage extends StatefulWidget {
   @override
@@ -26,9 +26,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      //backgroundColor: Colors.greenAccent,
       appBar: AppBar(
-        //backgroundColor: Colors.lightBlue,
         title: Text("CryptoSMS"),
         // Supprimer les actions pour enlever la loupe et les trois petits points
         actions: [],

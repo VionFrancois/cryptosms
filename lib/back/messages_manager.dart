@@ -250,7 +250,7 @@ class SMSMonitor {
 
   Future<List<Contact>?> checkForNewSMS() async {
     List<String> recentAddresses = [];
-    List<Contact> recentContacts = []; // Initialiser recentContacts ici
+    List<Contact> recentContacts = [];
     try {
       int start = 0;
       int count = 50;
@@ -269,6 +269,7 @@ class SMSMonitor {
               if (!recentAddresses.contains(address)) {
                 recentAddresses.add(address);
                 print("NOUVEAU SMS DE : $address");
+                await DatabaseHelper().newMessage(address, messages[i].body!, messages[i].date!);
               }
             }
           }
