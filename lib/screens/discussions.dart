@@ -45,7 +45,7 @@ class _ChatPageState extends State<ChatPage> {
       appBar: AppBar(
         elevation: 0,
         automaticallyImplyLeading: false, // Désactive le bouton de retour
-        backgroundColor: Colors.white,
+        // backgroundColor: Colors.white,
         flexibleSpace: SafeArea(
           child: Container(
             padding: EdgeInsets.only(right: 16),
