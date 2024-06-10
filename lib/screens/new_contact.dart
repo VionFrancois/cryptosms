@@ -40,33 +40,75 @@ class _SelectContactPageState extends State<SelectContactPage> {
     setState(() {
       _selectedContact = contact;
     });
-    _showConfirmationDialog(contact);
-  }
-
-  Future<void> _saveContactToDatabase() async {
     if (_selectedContact != null && _selectedContact!.phones!.isNotEmpty) {
       String phoneNumber = _selectedContact!.phones!.first.value ?? "000000000";
-      String name = _selectedContact!.displayName ?? "Contact";
-
-      // Appelle ta méthode pour sauvegarder le contact dans la base de données
-      Contact? newContact = await createContact(phoneNumber, name);
-      if (newContact != null) {
-        initHandshake(newContact);
+      if (phoneNumber.startsWith("0")) {
+        _showPrefixDialog(phoneNumber);
+      } else {
+        _showConfirmationDialog(contact);
       }
+    }
+  }
+
+  Future<void> _saveContactToDatabase(String phoneNumber, String name) async {
+    Contact? newContact = await createContact(phoneNumber, name);
+    if (newContact != null) {
+      initHandshake(newContact);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please select a contact with a phone number.')),
+        SnackBar(content: Text('Failed to create contact.')),
       );
     }
   }
 
-  void _showConfirmationDialog(contacts_service.Contact contact) {
+  void _showPrefixDialog(String phoneNumber) {
+    TextEditingController _prefixController = TextEditingController(text: "+");
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Enter International Prefix'),
+          content: TextField(
+            controller: _prefixController,
+            keyboardType: TextInputType.phone,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                String prefix = _prefixController.text;
+                if (prefix.isNotEmpty && prefix.startsWith("+")) {
+                  String updatedPhoneNumber = prefix + phoneNumber.substring(1);
+                  String name = _selectedContact!.displayName ?? "Contact";
+                  Navigator.of(context).pop();
+                  _showConfirmationDialogWithUpdatedNumber(name, updatedPhoneNumber);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Please enter a valid international prefix.')),
+                  );
+                }
+              },
+              child: Text('Confirm'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showConfirmationDialogWithUpdatedNumber(String name, String updatedPhoneNumber) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('Confirm Contact Addition'),
-          content: Text('Do you want to add ${contact.displayName} as a contact? ${contact.displayName} will receive an SMS of invitation'),
+          content: Text('Do you want to add $name as a contact? $name will receive an SMS of invitation.'),
           actions: [
             TextButton(
               onPressed: () {
@@ -77,7 +119,34 @@ class _SelectContactPageState extends State<SelectContactPage> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                _saveContactToDatabase();
+                _saveContactToDatabase(updatedPhoneNumber, name);
+              },
+              child: Text('Confirm'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showConfirmationDialog(contacts_service.Contact contact) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Confirm Contact Addition'),
+          content: Text('Do you want to add ${contact.displayName} as a contact? ${contact.displayName} will receive an SMS of invitation.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _saveContactToDatabase(contact.phones!.first.value!, contact.displayName ?? "Contact");
               },
               child: Text('Confirm'),
             ),
