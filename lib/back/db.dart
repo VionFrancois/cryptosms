@@ -70,7 +70,10 @@ class DatabaseHelper {
 
   // Méthode pour récupérer tous les contacts de la table
   Future<List<Contact>> getAllContacts() async {
-    final List<Map<String, dynamic>> maps = await db!.query('contacts');
+    final List<Map<String, dynamic>> maps = await db!.query(
+      'contacts',
+      orderBy: 'lastReceivedMessageDate DESC',
+    );
 
     return List.generate(maps.length, (i) {
       return Contact(
@@ -135,13 +138,17 @@ class DatabaseHelper {
   }
 
 
-  Future<int> updateCounter(String phoneNumber, int counter) async {
+  Future<int> newMessage(String phoneNumber, String newMessage, DateTime time) async {
     return await db!.update(
-      'contacts', // Nom de la table
-      {'counter': counter},
+      'contacts',
+      {
+        'lastReceivedMessage': newMessage,
+        'lastReceivedMessageDate': time.toIso8601String(),
+        'seen': 0,
+      },
       where: 'phoneNumber = ?',
       whereArgs: [phoneNumber],
     );
   }
-
+  
 }

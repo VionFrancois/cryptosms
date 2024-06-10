@@ -4,7 +4,6 @@ import '../models/user_model.dart';
 //import '../service/databasecontact.dart';
 import '../screens/new_contact.dart';
 import 'new_contact.dart';
-//import '../widgets/conversation_list.dart';
 import '../back/db.dart';
 
 // TODO : Dessin de chaine dans la liste des contacts en fonction de l'échange de clés ?

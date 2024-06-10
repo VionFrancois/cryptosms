@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import '../models/chatmessage_model.dart';
+import '../back/db.dart';
 
 class ChatDetailPage extends StatefulWidget {
+  final Contact contact;
+
+  ChatDetailPage({required this.contact});
+
   @override
   _ChatDetailPageState createState() => _ChatDetailPageState();
 }
@@ -61,7 +66,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: <Widget>[
                       Text(
-                        "Kriss Benwat",
+                        widget.contact.name,
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                       ),
                     ],
