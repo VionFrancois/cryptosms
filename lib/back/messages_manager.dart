@@ -87,7 +87,7 @@ Future<Contact?> createContact(String phoneNumber, String name) async {
     final privateKey = await keyPair.privateKey.exportJsonWebKey();
 
     // Create contact
-    Contact newContact = Contact(phoneNumber: phoneNumber, name: name, privateKey: json.encode(privateKey), publicKey: json.encode(publicKey), symmetricKey: "", lastReceivedMessageDate: DateTime(2000, 1, 1).toIso8601String());
+    Contact newContact = Contact(phoneNumber: phoneNumber, name: name, privateKey: json.encode(privateKey), publicKey: json.encode(publicKey), symmetricKey: "", lastReceivedMessageDate: DateTime(2000, 1, 1).toIso8601String(), lastReceivedMessage: "", seen : true);
     await DatabaseHelper().insertContact(newContact);
     return newContact;
   }
