@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../models/chatmessage_model.dart';
 import '../back/db.dart';
 import '../back/crypto.dart';
 import '../back/sms_manager.dart';
+
+// This class represents a message in the conversation
+class ChatMessage{
+  String messageContent;
+  String messageType;
+  String date;
+  ChatMessage({required this.messageContent, required this.messageType, required this.date});
+}
 
 class ChatDetailPage extends StatefulWidget {
   final Contact contact;

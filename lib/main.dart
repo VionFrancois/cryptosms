@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:cryptosms/back/sms_manager.dart';
-import 'package:cryptosms/screens/home_page.dart';
+import 'package:cryptosms/front/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'back/db.dart';
