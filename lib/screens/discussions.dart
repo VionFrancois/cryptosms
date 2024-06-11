@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../back/messages_manager.dart';
 import '../screens/messages.dart';
 import '../back/db.dart';
+import '../back/crypto.dart';
 
 String formatElapsedTime(String dateString) {
   DateTime messageDate = DateTime.parse(dateString);
@@ -41,7 +41,7 @@ class _ChatPageState extends State<ChatPage> {
       if (contact.lastReceivedMessage.isNotEmpty) {
         print(contact.lastReceivedMessage);
         try {
-          String decryptedMessage = await readEncryptedMessage(contact, contact.lastReceivedMessage);
+          String decryptedMessage = await CryptoManager().readEncryptedMessage(contact, contact.lastReceivedMessage);
           decryptedMessages[contact.phoneNumber] = decryptedMessage;
         } catch (e) {
           print("Erreur de déchiffrement page d'accueil");

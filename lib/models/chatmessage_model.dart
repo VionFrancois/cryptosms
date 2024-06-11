@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 
+// TODO : Move this ?
 class ChatMessage{
   String messageContent;
   String messageType;

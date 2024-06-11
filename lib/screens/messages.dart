@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/chatmessage_model.dart';
 import '../back/db.dart';
-import '../back/messages_manager.dart';
+import '../back/crypto.dart';
+import '../back/sms_manager.dart';
 
 class ChatDetailPage extends StatefulWidget {
   final Contact contact;
@@ -26,7 +27,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
 
   Future<void> _fetchMessages() async {
     try {
-      List<List<dynamic>> fetchedConversation = await fetchConversation(widget.contact);
+      List<List<dynamic>> fetchedConversation = await SMSManager().fetchConversation(widget.contact);
       if (fetchedConversation.isNotEmpty) {
         List<ChatMessage> fetchedMessages = fetchedConversation.map((tuple) {
           String messageContent = tuple[0] as String;
@@ -55,7 +56,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     String message = _messageController.text;
     if (message.isNotEmpty) {
       try {
-        sendEncryptedMessage(widget.contact, message);
+        CryptoManager().sendEncryptedMessage(widget.contact, message);
         setState(() {
           String formattedDate = DateFormat('HH:mm').format(DateTime.now());
           messages.add(ChatMessage(messageContent: message, messageType: "sender", date: formattedDate));

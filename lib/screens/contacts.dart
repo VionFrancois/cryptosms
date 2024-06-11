@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import '../models/user_model.dart';
 import '../back/db.dart';
 import 'new_contact.dart';
 
