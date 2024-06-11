@@ -1,19 +1,15 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../models/user_model.dart';
-//import '../service/databasecontact.dart';
-import '../screens/new_contact.dart';
-import 'new_contact.dart';
 import '../back/db.dart';
-
-// TODO : Dessin de chaine dans la liste des contacts en fonction de l'échange de clés ?
+import 'new_contact.dart';
 
 class Contacts extends StatefulWidget {
   @override
   _ContactsState createState() => _ContactsState();
 }
 
-class _ContactsState extends State<Contacts>{
+class _ContactsState extends State<Contacts> {
   // Liste de contacts pour l'affichage
   List<Contact> _contacts = [];
 
@@ -59,13 +55,13 @@ class _ContactsState extends State<Contacts>{
                         height: 30,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(30),
-                          color: Colors.pink[50],
+                          color: Colors.orange[50],
                         ),
                         child: Row(
                           children: <Widget>[
                             Icon(
                               Icons.add,
-                              color: Colors.pink,
+                              color: Colors.orange,
                               size: 20,
                             ),
                             SizedBox(
@@ -114,7 +110,17 @@ class _ContactsState extends State<Contacts>{
                 itemBuilder: (context, index) {
                   Contact contact = _contacts[index];
                   return ListTile(
-                    title: Text(contact.name),
+                    title: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(contact.name),
+                        Image.asset(
+                          contact.symmetricKey == "" ? 'assets/unconnected.png' : 'assets/connected.png',
+                          height: 20,
+                          width: 70,
+                        ),
+                      ],
+                    ),
                   );
                 },
               ),
