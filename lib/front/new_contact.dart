@@ -10,13 +10,23 @@ class SelectContactPage extends StatefulWidget {
 }
 
 class _SelectContactPageState extends State<SelectContactPage> {
-  List<contacts_service.Contact> _contacts = [];
-  contacts_service.Contact? _selectedContact;
+  List<contacts_service.Contact> contacts = [];
+  List<contacts_service.Contact> searchedContacts = [];
+  contacts_service.Contact? selectedContact;
+
+  TextEditingController searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _requestPermission();
+    searchController.addListener(_searchContacts);
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _requestPermission() async {
@@ -30,22 +40,35 @@ class _SelectContactPageState extends State<SelectContactPage> {
   }
 
   Future<void> _fetchContacts() async {
-    Iterable<contacts_service.Contact> contacts = await contacts_service.ContactsService.getContacts();
+    Iterable<contacts_service.Contact> contactsList = await contacts_service.ContactsService.getContacts();
     setState(() {
-      _contacts = contacts.toList();
+      contacts = contactsList.toList();
+      searchedContacts = contacts;
+    });
+  }
+
+  void _searchContacts() {
+    String query = searchController.text.toLowerCase();
+    setState(() {
+      searchedContacts = contacts.where((contact) {
+        return (contact.displayName ?? '').toLowerCase().contains(query) ||
+            (contact.phones?.any((phone) => phone.value?.contains(query) ?? false) ?? false);
+      }).toList();
     });
   }
 
   void _selectContact(contacts_service.Contact contact) {
     setState(() {
-      _selectedContact = contact;
+      selectedContact = contact;
     });
-    if (_selectedContact != null && _selectedContact!.phones!.isNotEmpty) {
-      String phoneNumber = _selectedContact!.phones!.first.value ?? "000000000";
-      if (phoneNumber.startsWith("0")) {
-        _showPrefixDialog(phoneNumber);
-      } else {
-        _showConfirmationDialog(contact);
+    if (selectedContact != null && selectedContact!.phones!.isNotEmpty) {
+      if (selectedContact!.phones!.first.value != null){
+        String? phoneNumber = selectedContact!.phones!.first.value;
+        if (phoneNumber!.startsWith("0")) {
+          _showPrefixDialog(phoneNumber);
+        } else {
+          _showConfirmationDialog(contact);
+        }
       }
     }
   }
@@ -86,7 +109,7 @@ class _SelectContactPageState extends State<SelectContactPage> {
                 String prefix = _prefixController.text;
                 if (prefix.isNotEmpty && prefix.startsWith("+")) {
                   String updatedPhoneNumber = prefix + phoneNumber.substring(1);
-                  String name = _selectedContact!.displayName ?? "Contact";
+                  String name = selectedContact!.displayName ?? "Contact";
                   Navigator.of(context).pop();
                   _showConfirmationDialogWithUpdatedNumber(name, updatedPhoneNumber);
                 } else {
@@ -163,22 +186,50 @@ class _SelectContactPageState extends State<SelectContactPage> {
       appBar: AppBar(
         title: Text("Select Contact"),
       ),
-      body: _contacts.isEmpty
-          ? Center(child: CircularProgressIndicator())
-          : ListView.builder(
-        itemCount: _contacts.length,
-        itemBuilder: (context, index) {
-          contacts_service.Contact contact = _contacts[index];
-          return ListTile(
-            title: Text(contact.displayName ?? 'No name'),
-            subtitle: Text(contact.phones!.isNotEmpty
-                ? contact.phones!.first.value ?? 'No phone number'
-                : 'No phone number'),
-            onTap: () {
-              _selectContact(contact);
-            },
-          );
-        },
+      body: Column(
+        children: [
+          Padding(
+            padding: EdgeInsets.all(16.0),
+            child: TextField(
+              controller: searchController,
+              decoration: InputDecoration(
+                hintText: "Search",
+                hintStyle: TextStyle(color: Colors.grey.shade600),
+                prefixIcon: Icon(
+                  Icons.search,
+                  color: Colors.grey.shade600,
+                  size: 20,
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                contentPadding: EdgeInsets.all(8),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  borderSide: BorderSide(color: Colors.grey.shade100),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: searchedContacts.isEmpty
+                ? Center(child: CircularProgressIndicator())
+                : ListView.builder(
+              itemCount: searchedContacts.length,
+              itemBuilder: (context, index) {
+                contacts_service.Contact contact = searchedContacts[index];
+                return ListTile(
+                  title: Text(contact.displayName ?? 'No name'),
+                  subtitle: Text(contact.phones!.isNotEmpty
+                      ? contact.phones!.first.value ?? 'No phone number'
+                      : 'No phone number'),
+                  onTap: () {
+                    _selectContact(contact);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
