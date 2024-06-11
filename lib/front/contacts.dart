@@ -9,19 +9,41 @@ class Contacts extends StatefulWidget {
 }
 
 class _ContactsState extends State<Contacts> {
-  // Liste de contacts pour l'affichage
-  List<Contact> _contacts = [];
+  // Contacts list to display
+  List<Contact> contacts = [];
+  List<Contact> searchedContacts = [];
+
+  TextEditingController searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _fetchContacts();
+    searchController.addListener(_searchContacts);
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchContacts() async {
+    // Fetches contacts from database
     List<Contact> contacts = await DatabaseHelper().getAllContacts();
     setState(() {
-      _contacts = contacts;
+      contacts = contacts;
+      searchedContacts = contacts;
+    });
+  }
+
+  // Search the contacts that satisfy the query
+  void _searchContacts() {
+    String query = searchController.text.toLowerCase();
+    setState(() {
+      searchedContacts = contacts.where((contact) {
+        return contact.name.toLowerCase().contains(query);
+      }).toList();
     });
   }
 
@@ -33,7 +55,9 @@ class _ContactsState extends State<Contacts> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
-            SafeArea(
+
+            // Title and "Add new" button area
+            Container(
               child: Padding(
                 padding: EdgeInsets.only(left: 16, right: 16, top: 10),
                 child: Row(
@@ -43,12 +67,17 @@ class _ContactsState extends State<Contacts> {
                       "Contacts",
                       style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
                     ),
+
+                    // Add new button
                     GestureDetector(
+                      // Action
                       onTap: () {
                         Navigator.push(context, MaterialPageRoute(builder: (context) {
                           return SelectContactPage();
                         }));
                       },
+
+                      // Appearance
                       child: Container(
                         padding: EdgeInsets.only(left: 8, right: 8, top: 2, bottom: 2),
                         height: 30,
@@ -67,7 +96,7 @@ class _ContactsState extends State<Contacts> {
                               width: 2,
                             ),
                             Text(
-                              "Add New",
+                              "Add new",
                               style: TextStyle(
                                   fontSize: 14, fontWeight: FontWeight.bold),
                             ),
@@ -79,11 +108,15 @@ class _ContactsState extends State<Contacts> {
                 ),
               ),
             ),
+
+
+            // Search bar
             Padding(
               padding: EdgeInsets.only(top: 16, left: 16, right: 16),
               child: TextField(
+                controller: searchController,
                 decoration: InputDecoration(
-                  hintText: "Search...",
+                  hintText: "Search",
                   hintStyle: TextStyle(color: Colors.grey.shade600),
                   prefixIcon: Icon(
                     Icons.search,
@@ -99,16 +132,19 @@ class _ContactsState extends State<Contacts> {
                 ),
               ),
             ),
-            // Afficher la liste des contacts
+
+
+            // Contacts list
             Padding(
               padding: EdgeInsets.all(16.0),
               child: ListView.builder(
-                shrinkWrap: true, // Important to make ListView inside SingleChildScrollView
-                physics: NeverScrollableScrollPhysics(), // Disable ListView scrolling
-                itemCount: _contacts.length,
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                itemCount: searchedContacts.length,
                 itemBuilder: (context, index) {
-                  Contact contact = _contacts[index];
+                  Contact contact = searchedContacts[index];
                   return ListTile(
+                    // A line of the list (Name + connexion icon)
                     title: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
