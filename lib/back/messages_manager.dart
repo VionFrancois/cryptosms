@@ -191,7 +191,7 @@ void sendEncryptedMessage(Contact contact, String message) async {
 
   _sendSMS(content, contact.phoneNumber);
 
-  DatabaseHelper().newMessage(contact.phoneNumber, message, DateTime.now());
+  DatabaseHelper().newMessage(contact.phoneNumber, content, DateTime.now(), true);
 }
 
 Future<String> readEncryptedMessage(Contact contact, String encryptedMessage) async{
@@ -274,7 +274,6 @@ class SMSMonitor {
   }
 
 
-  var lastMessageDate;
 
   Future<List<Contact>?> checkForNewSMS() async {
     List<String> recentAddresses = [];
@@ -284,19 +283,22 @@ class SMSMonitor {
       int count = 50;
       List<SmsMessage> messages = await SmsQuery().querySms(kinds: [SmsQueryKind.inbox], start: start, count: count);
 
-      String? lastMessageDate = await DatabaseHelper().getLastReceivedMessageDate(); // Si lastMessage == null, on va le fetch
+      String? lastMessageDateString = await DatabaseHelper().getLastReceivedMessageDate();
+      DateTime? lastMessageDate = DateTime.tryParse(lastMessageDateString ?? '');
 
       if (lastMessageDate != null) {
         int i = 0;
-        while (i < messages.length && messages[i].dateSent != null && lastMessageDate != messages[i].dateSent.toString()) {
+        while (i < messages.length && messages[i].date != null && lastMessageDate.isBefore(messages[i].date!)) {
+          print(lastMessageDate.isBefore(messages[i].date!));
           // Si c'est un message chiffré
           if (messages[i].body != null && checkHeader(messages[i].body!)[0]) {
             String? address = messages[i].address;
             if (address != null) {
               // Si on n'a pas encore relevé ce contact
               if (!recentAddresses.contains(address)) {
+                print("NOUVEAU MESSAGE");
                 recentAddresses.add(address);
-                await DatabaseHelper().newMessage(address, messages[i].body!, messages[i].date!);
+                await DatabaseHelper().newMessage(address, messages[i].body!, messages[i].date!, false);
               }
             }
           }

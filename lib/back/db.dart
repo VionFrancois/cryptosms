@@ -38,7 +38,7 @@ class DatabaseHelper {
 
   Future<void> initDatabase(String password) async {
     String databasesPath = await getDatabasesPath();
-    String path = '${databasesPath}your_database.db';
+    String path = '${databasesPath}your_database.db'; // TODO : Changer
 
     db = await openDatabase(path, password: password, version: 1, onCreate: _onCreate);
   }
@@ -134,21 +134,32 @@ class DatabaseHelper {
     } catch (e) {
       print('Erreur lors de la récupération de la date du dernier message reçu: $e');
     }
-    return null; // Si aucun résultat n'est trouvé ou en cas d'erreur
+    return null;
   }
 
 
-  Future<int> newMessage(String phoneNumber, String newMessage, DateTime time) async {
+  Future<int> newMessage(String phoneNumber, String newMessage, DateTime time, bool seen) async {
     return await db!.update(
       'contacts',
       {
         'lastReceivedMessage': newMessage,
         'lastReceivedMessageDate': time.toIso8601String(),
-        'seen': 0,
+        'seen': seen ? 1 : 0,
       },
       where: 'phoneNumber = ?',
       whereArgs: [phoneNumber],
     );
   }
+
+
+  Future<void> messageSeen(String phoneNumber) async {
+    await db!.update(
+      'contacts',
+      {'seen': 1},
+      where: 'phoneNumber = ?',
+      whereArgs: [phoneNumber],
+    );
+  }
+
   
 }

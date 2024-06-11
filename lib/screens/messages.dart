@@ -48,6 +48,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     } catch (e) {
       print('Erreur lors de la récupération des messages: $e');
     }
+    DatabaseHelper().messageSeen(widget.contact.phoneNumber);
   }
 
   void _sendMessage() async {
@@ -83,7 +84,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
               children: <Widget>[
                 IconButton(
                   onPressed: () {
-                    Navigator.pop(context);
+                    Navigator.pop(context, true);
                   },
                   icon: Icon(Icons.arrow_back, color: Colors.black),
                 ),
@@ -157,6 +158,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
               color: Colors.white,
               child: Row(
                 children: <Widget>[
+                  SizedBox(width: 10),
                   Expanded(
                     child: TextField(
                       controller: _messageController,
@@ -178,6 +180,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                     backgroundColor: Colors.blue,
                     elevation: 0,
                   ),
+                  SizedBox(width: 10),
                 ],
               ),
             ),

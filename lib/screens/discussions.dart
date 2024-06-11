@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../back/messages_manager.dart';
 import '../screens/messages.dart';
 import '../back/db.dart';
 
@@ -24,6 +25,7 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   List<Contact> contacts = [];
+  Map<String, String> decryptedMessages = {};
 
   @override
   void initState() {
@@ -33,6 +35,20 @@ class _ChatPageState extends State<ChatPage> {
 
   Future<void> _fetchContacts() async {
     List<Contact> fetchedContacts = await DatabaseHelper().getAllContacts();
+
+    // Charger les messages et les déchiffrer
+    for (var contact in fetchedContacts) {
+      if (contact.lastReceivedMessage.isNotEmpty) {
+        print(contact.lastReceivedMessage);
+        try{
+          String decryptedMessage = await readEncryptedMessage(contact, contact.lastReceivedMessage);
+          decryptedMessages[contact.phoneNumber] = decryptedMessage;
+
+        } catch (e){
+          print("Erreur de déchiffrement page d'accueil");
+        }
+      }
+    }
 
     setState(() {
       contacts = fetchedContacts;
@@ -73,10 +89,16 @@ class _ChatPageState extends State<ChatPage> {
               physics: NeverScrollableScrollPhysics(),
               itemBuilder: (context, index) {
                 return GestureDetector(
-                  onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) {
-                      return ChatDetailPage(contact: contacts[index]);
-                    }));
+                  onTap: () async {
+                    bool? shouldRefresh = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ChatDetailPage(contact: contacts[index]),
+                      ),
+                    );
+                    if (shouldRefresh == true) {
+                      _fetchContacts();
+                    }
                   },
                   child: Container(
                     padding: EdgeInsets.only(left: 16, right: 16, top: 10, bottom: 10),
@@ -88,7 +110,6 @@ class _ChatPageState extends State<ChatPage> {
                     ),
                     child: Row(
                       children: <Widget>[
-                        // Suppression du CircleAvatar
                         SizedBox(width: 16),
                         Expanded(
                           child: Container(
@@ -102,7 +123,7 @@ class _ChatPageState extends State<ChatPage> {
                                 ),
                                 SizedBox(height: 6),
                                 Text(
-                                  contacts[index].lastReceivedMessage,
+                                  decryptedMessages[contacts[index].phoneNumber] ?? "",
                                   style: TextStyle(
                                     fontSize: 13,
                                     color: Colors.grey.shade600,
