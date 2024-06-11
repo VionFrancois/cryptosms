@@ -40,11 +40,10 @@ class _ChatPageState extends State<ChatPage> {
     for (var contact in fetchedContacts) {
       if (contact.lastReceivedMessage.isNotEmpty) {
         print(contact.lastReceivedMessage);
-        try{
+        try {
           String decryptedMessage = await readEncryptedMessage(contact, contact.lastReceivedMessage);
           decryptedMessages[contact.phoneNumber] = decryptedMessage;
-
-        } catch (e){
+        } catch (e) {
           print("Erreur de déchiffrement page d'accueil");
         }
       }
@@ -58,92 +57,91 @@ class _ChatPageState extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        automaticallyImplyLeading: false, // Désactive le bouton de retour
-        // backgroundColor: Colors.white,
-        flexibleSpace: SafeArea(
-          child: Container(
-            padding: EdgeInsets.only(right: 16),
-            child: Row(
-              children: <Widget>[
-                SizedBox(width: 16),
-                Text(
-                  "Conversations",
-                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+      body: RefreshIndicator(
+        onRefresh: _fetchContacts,
+        child: CustomScrollView(
+          slivers: <Widget>[
+            SliverAppBar(
+              pinned: true,
+              floating: true,
+              snap: true,
+              elevation: 0,
+              automaticallyImplyLeading: false, // Désactive le bouton de retour
+              backgroundColor: Colors.white,
+              flexibleSpace: SafeArea(
+                child: Container(
+                  padding: EdgeInsets.only(right: 16),
+                  child: Row(
+                    children: <Widget>[
+                      SizedBox(width: 16),
+                      Text(
+                        "Conversations",
+                        style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
-      ),
-      body: SingleChildScrollView(
-        physics: BouncingScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            ListView.builder(
-              itemCount: contacts.length,
-              shrinkWrap: true,
-              padding: EdgeInsets.only(top: 16),
-              physics: NeverScrollableScrollPhysics(),
-              itemBuilder: (context, index) {
-                return GestureDetector(
-                  onTap: () async {
-                    bool? shouldRefresh = await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ChatDetailPage(contact: contacts[index]),
-                      ),
-                    );
-                    if (shouldRefresh == true) {
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                  return GestureDetector(
+                    onTap: () async {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ChatDetailPage(contact: contacts[index]),
+                        ),
+                      );
                       _fetchContacts();
-                    }
-                  },
-                  child: Container(
-                    padding: EdgeInsets.only(left: 16, right: 16, top: 10, bottom: 10),
-                    decoration: BoxDecoration(
-                      color: contacts[index].seen ? Colors.white : Colors.yellow.withOpacity(0.2),
-                      border: Border(
-                        bottom: BorderSide(color: Colors.grey.shade300),
+                    },
+                    child: Container(
+                      padding: EdgeInsets.only(left: 16, right: 16, top: 10, bottom: 10),
+                      decoration: BoxDecoration(
+                        color: contacts[index].seen ? Colors.white : Colors.yellow.withOpacity(0.2),
+                        border: Border(
+                          bottom: BorderSide(color: Colors.grey.shade300),
+                        ),
                       ),
-                    ),
-                    child: Row(
-                      children: <Widget>[
-                        SizedBox(width: 16),
-                        Expanded(
-                          child: Container(
-                            color: Colors.transparent,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: <Widget>[
-                                Text(
-                                  contacts[index].name,
-                                  style: TextStyle(fontSize: 16),
-                                ),
-                                SizedBox(height: 6),
-                                Text(
-                                  decryptedMessages[contacts[index].phoneNumber] ?? "",
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.grey.shade600,
+                      child: Row(
+                        children: <Widget>[
+                          SizedBox(width: 16),
+                          Expanded(
+                            child: Container(
+                              color: Colors.transparent,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Text(
+                                    contacts[index].name,
+                                    style: TextStyle(fontSize: 16),
                                   ),
-                                ),
-                              ],
+                                  SizedBox(height: 6),
+                                  Text(
+                                    decryptedMessages[contacts[index].phoneNumber] ?? "",
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                        Text(
-                          formatElapsedTime(contacts[index].lastReceivedMessageDate),
-                          style: TextStyle(
-                            fontSize: 12,
+                          Text(
+                            formatElapsedTime(contacts[index].lastReceivedMessageDate),
+                            style: TextStyle(
+                              fontSize: 12,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+                childCount: contacts.length,
+              ),
             ),
           ],
         ),
