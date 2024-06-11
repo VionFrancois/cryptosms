@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:sqflite_sqlcipher/sqflite.dart';
 
 // Define a Contact with all the data in a row of the database
