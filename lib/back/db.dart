@@ -48,11 +48,22 @@ class DatabaseHelper {
 
   DatabaseHelper._internal();
 
+  Future<bool> databaseExists() async {
+    String databasesPath = await getDatabasesPath();
+    return databaseFactory.databaseExists('${databasesPath}/cryptosms.db');
+  }
+
   Future<void> initDatabase(String password) async {
     String databasesPath = await getDatabasesPath();
-    String path = '${databasesPath}cryptosms.db';
+    String path = '${databasesPath}/cryptosms.db';
 
-    db = await openDatabase(path, password: password, version: 1, onCreate: _onCreate);
+    try{
+      db = await openDatabase(
+            path, password: password, version: 1, onCreate: _onCreate);
+    }
+    catch (e){
+      throw Exception("Failed to open database: Invalid PIN");
+    }
   }
 
   // Creates the table at first initialisation
