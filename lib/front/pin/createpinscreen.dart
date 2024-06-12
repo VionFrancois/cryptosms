@@ -23,11 +23,9 @@ class _CreatePinScreenState extends State<CreatePinScreen> {
     CryptoManager().verifyContactsKeys();
     SMSManager smsMonitor = SMSManager();
     smsMonitor.startMonitoring();
-    // Navigator.pushReplacement(
-    //     context, MaterialPageRoute(builder: (context) => MyHomePage()));
 
     Navigator.pushReplacement(
-        context, MaterialPageRoute(builder: (context) => OnboardingPage()));
+        context, MaterialPageRoute(builder: (context) => StartPage()));
   }
 
   @override
