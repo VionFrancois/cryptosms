@@ -61,7 +61,6 @@ class _PinCodeWidgetState extends State<PinCodeWidget> {
   void verifyPin() async {
 
     try {
-      print(enteredPin);
       await DatabaseHelper().initDatabase(enteredPin);
 
       CryptoManager().verifyContactsKeys();
@@ -77,8 +76,8 @@ class _PinCodeWidgetState extends State<PinCodeWidget> {
         context: context,
         builder: (context) {
           return AlertDialog(
-            title: const Text('Erreur'),
-            content: const Text('Le code PIN est incorrect.'),
+            title: const Text('Error'),
+            content: const Text('The PIN code is incorrect'),
             actions: [
               TextButton(
                 onPressed: () {
@@ -97,6 +96,7 @@ class _PinCodeWidgetState extends State<PinCodeWidget> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -132,16 +132,24 @@ class _PinCodeWidgetState extends State<PinCodeWidget> {
                 ),
                 const SizedBox(height: 80),
                 const Text(
-                  'Enter Your Pin',
+                  'Enter your PIN code',
                   style: TextStyle(
                     fontSize: 32,
                     color: Colors.black,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
+                const Text(
+                  'Votre code PIN doit contenir 4 chiffres au maximum',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.black,
+                    //fontWeight: FontWeight.w600,
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 50),
+            const SizedBox(height: 30),
 
             /// pin code area
             Row(
@@ -195,7 +203,7 @@ class _PinCodeWidgetState extends State<PinCodeWidget> {
             /// digits
             for (var i = 0; i < 3; i++)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(horizontal: 30),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: List.generate(
@@ -207,11 +215,22 @@ class _PinCodeWidgetState extends State<PinCodeWidget> {
 
             /// 0 digit with back remove
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 30),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const TextButton(onPressed: null, child: SizedBox()),
+                  TextButton(onPressed: () {
+                    setState(() {
+                      enteredPin='';
+                    });
+                  },
+                    child: const Text (
+                      'Reset',
+                      style: TextStyle(
+                        fontSize: 18, color: Colors.black,
+                      ),
+                    ), ) ,
+                  //const TextButton(onPressed: null, child: SizedBox()),
                   numButton(0),
                   TextButton(
                     onPressed: () {
@@ -234,11 +253,11 @@ class _PinCodeWidgetState extends State<PinCodeWidget> {
               ),
             ),
 
-            /// reset button
+            /// ok button
 
             TextButton(
               onPressed: () {
-                verifyPin();
+                verifyPin(); // Appellez la fonction de création du PIN
               },
               child: const Text(
                 'Ok',

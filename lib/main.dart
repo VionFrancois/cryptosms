@@ -20,7 +20,7 @@ class _MyAppState extends State<MyApp> {
   void requestSmsPermission() async {
     if (await Permission.sms.status.isDenied) {
       if (!await Permission.sms.request().isGranted) {
-        throw Exeption("The application needs the permissions for SMS")
+        throw Exception("The application needs the permissions for SMS");
       }
     }
   }
