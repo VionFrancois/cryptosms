@@ -16,22 +16,19 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+
   void requestSmsPermission() async {
     if (await Permission.sms.status.isDenied) {
-      if (await Permission.sms.request().isGranted) {
-        print('SMS permission granted');
-      } else {
-        print('SMS permission denied');
+      if (!await Permission.sms.request().isGranted) {
+        throw Exeption("The application needs the permissions for SMS")
       }
-    } else {
-      print('SMS permission already granted');
     }
   }
 
   @override
   void initState() {
     super.initState();
-    requestSmsPermission(); // Request permission on app initialization
+    requestSmsPermission();
   }
 
   @override
@@ -43,6 +40,7 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      // Launch Pin code at starting
       home: PinCodeVerification(),
     );
   }
