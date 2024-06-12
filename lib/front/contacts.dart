@@ -50,65 +50,62 @@ class _ContactsState extends State<Contacts> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SingleChildScrollView(
-        physics: BouncingScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      body: RefreshIndicator(
+        onRefresh: _fetchContacts,
+        child: ListView(
+          physics: AlwaysScrollableScrollPhysics(), // pour toujours permettre le glissement
           children: <Widget>[
 
             // Title and "Add new" button area
             Container(
-              child: Padding(
-                padding: EdgeInsets.only(left: 16, right: 16, top: 10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: <Widget>[
-                    Text(
-                      "Contacts",
-                      style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-                    ),
+              padding: EdgeInsets.only(left: 16, right: 16, top: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: <Widget>[
+                  Text(
+                    "Contacts",
+                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                  ),
 
-                    // Add new button
-                    GestureDetector(
-                      // Action
-                      onTap: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (context) {
-                          return SelectContactPage();
-                        }));
-                      },
+                  // Add new button
+                  GestureDetector(
+                    // Action
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) {
+                        return SelectContactPage();
+                      }));
+                    },
 
-                      // Appearance
-                      child: Container(
-                        padding: EdgeInsets.only(left: 8, right: 8, top: 2, bottom: 2),
-                        height: 30,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(30),
-                          color: Colors.orange[50],
-                        ),
-                        child: Row(
-                          children: <Widget>[
-                            Icon(
-                              Icons.add,
-                              color: Colors.orange,
-                              size: 20,
-                            ),
-                            SizedBox(
-                              width: 2,
-                            ),
-                            Text(
-                              "Add new",
-                              style: TextStyle(
-                                  fontSize: 14, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
+                    // Appearance
+                    child: Container(
+                      padding: EdgeInsets.only(left: 8, right: 8, top: 2, bottom: 2),
+                      height: 30,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(30),
+                        color: Colors.orange[50],
                       ),
-                    )
-                  ],
-                ),
+                      child: Row(
+                        children: <Widget>[
+                          Icon(
+                            Icons.add,
+                            color: Colors.orange,
+                            size: 20,
+                          ),
+                          SizedBox(
+                            width: 2,
+                          ),
+                          Text(
+                            "Add new",
+                            style: TextStyle(
+                                fontSize: 14, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                ],
               ),
             ),
-
 
             // Search bar
             Padding(
@@ -132,7 +129,6 @@ class _ContactsState extends State<Contacts> {
                 ),
               ),
             ),
-
 
             // Contacts list
             Padding(

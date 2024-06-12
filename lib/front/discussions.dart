@@ -80,7 +80,7 @@ class _ChatPageState extends State<ChatPage> {
                     children: <Widget>[
                       SizedBox(width: 16),
                       Text(
-                        "Conversations",
+                        "Discussions",
                         style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
                       ),
                     ],
