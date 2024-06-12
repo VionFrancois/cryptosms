@@ -43,9 +43,6 @@ class _SelectContactPageState extends State<SelectContactPage> {
 
   // Fetch all the device's contacts using contacts_service library
   Future<void> _fetchContacts() async {
-    // Verify if there is new keys
-    CryptoManager().verifyContactsKeys();
-
     Iterable<contacts_service.Contact> contactsList = await contacts_service.ContactsService.getContacts();
     setState(() {
       contacts = contactsList.toList();

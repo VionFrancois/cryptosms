@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import '../back/crypto.dart';
 import '../back/db.dart';
 import 'new_contact.dart';
 
@@ -29,6 +30,8 @@ class _ContactsState extends State<Contacts> {
   }
 
   Future<void> _fetchContacts() async {
+    // Verify if there is new keys
+    CryptoManager().verifyContactsKeys();
     // Fetches contacts from database
     List<Contact> contacts = await DatabaseHelper().getAllContacts();
     setState(() {
