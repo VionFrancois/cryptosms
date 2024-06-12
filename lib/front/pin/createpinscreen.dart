@@ -3,6 +3,9 @@ import 'package:cryptosms/front/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 
+import '../../back/crypto.dart';
+import '../../back/sms_manager.dart';
+
 class CreatePinScreen extends StatefulWidget {
   @override
   _CreatePinScreenState createState() => _CreatePinScreenState();
@@ -18,7 +21,10 @@ class _CreatePinScreenState extends State<CreatePinScreen> {
     // await prefs.setBool('has_pin', true);
     // await prefs.setString('pin', newPin);
     await DatabaseHelper().initDatabase(newPin);
-    print(await DatabaseHelper().databaseExists());
+
+    CryptoManager().verifyContactsKeys();
+    SMSManager smsMonitor = SMSManager();
+    smsMonitor.startMonitoring();
     Navigator.pushReplacement(
         context, MaterialPageRoute(builder: (context) => MyHomePage()));
   }

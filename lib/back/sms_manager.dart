@@ -53,7 +53,6 @@ class SMSManager {
       // Make the query only small parts of the SMS inbox
       int start = 0;
       int count = 50;
-      // TODO : Filter messages only coming from cSMS contacts for more privacy ?
       List<SmsMessage> messages = await SmsQuery().querySms(kinds: [SmsQueryKind.inbox], start: start, count: count);
 
       // Retrieve the last cSMS message date from database
