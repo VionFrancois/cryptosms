@@ -37,7 +37,7 @@ class CryptoManager {
     return null;
   }
 
-  void initHandshake(Contact contact) { // TODO : N'appeller que si l'autre personne n'a pas envoyé de clé (vérifier si une clé existe avant d'appeler)
+  void initHandshake(Contact contact) {
     // Sends the invitation message and the public key for symmetric key computation
     String message =
         "Hello ! I use cryptoSMS to encrypt my SMS, let's get in touch and regain control over your data. Download the application via ...";

@@ -3,6 +3,7 @@ import 'package:contacts_service/contacts_service.dart' as contacts_service;
 import 'package:permission_handler/permission_handler.dart';
 import '../back/db.dart';
 import '../back/crypto.dart';
+import '../back/sms_manager.dart';
 
 class SelectContactPage extends StatefulWidget {
   @override
@@ -29,6 +30,7 @@ class _SelectContactPageState extends State<SelectContactPage> {
     super.dispose();
   }
 
+  // Requests permissions for contact's access
   Future<void> _requestPermission() async {
     if (await Permission.contacts.request().isGranted) {
       _fetchContacts();
@@ -39,6 +41,7 @@ class _SelectContactPageState extends State<SelectContactPage> {
     }
   }
 
+  // Fetch all the device's contacts using contacts_service library
   Future<void> _fetchContacts() async {
     Iterable<contacts_service.Contact> contactsList = await contacts_service.ContactsService.getContacts();
     setState(() {
@@ -47,6 +50,7 @@ class _SelectContactPageState extends State<SelectContactPage> {
     });
   }
 
+  // Search the contacts that satisfy the query
   void _searchContacts() {
     String query = searchController.text.toLowerCase();
     setState(() {
@@ -57,6 +61,7 @@ class _SelectContactPageState extends State<SelectContactPage> {
     });
   }
 
+  // Method executed when we tap on a contact
   void _selectContact(contacts_service.Contact contact) {
     setState(() {
       selectedContact = contact;
@@ -64,20 +69,33 @@ class _SelectContactPageState extends State<SelectContactPage> {
     if (selectedContact != null && selectedContact!.phones!.isNotEmpty) {
       if (selectedContact!.phones!.first.value != null){
         String? phoneNumber = selectedContact!.phones!.first.value;
+        // If the number starts with 0, we have to ask the user what prefix it is
         if (phoneNumber!.startsWith("0")) {
           _showPrefixDialog(phoneNumber);
         } else {
-          _showConfirmationDialog(contact);
+          _showConfirmationDialog(contact.displayName ?? "Contact", contact.phones!.first.value!);
         }
       }
     }
   }
 
   Future<void> _saveContactToDatabase(String phoneNumber, String name) async {
-    // TODO : Vérif ici si on a pas déjà reçu une clé ? Si oui, ne pas init mais juste fetch
     Contact? newContact = await CryptoManager().createContact(phoneNumber, name);
+
     if (newContact != null) {
-      CryptoManager().initHandshake(newContact);
+      // We verify if it's contact has already sent us a key
+      String? key = await CryptoManager().fetchKey(newContact.phoneNumber);
+      if (key != null) {
+        // Only send our key as it is done in initHandshake
+        var keyMessage = "cSMS key : ${newContact.publicKey}";
+        SMSManager().sendSMS(keyMessage, newContact.phoneNumber);
+        // Complete the handshake with both keys
+        CryptoManager().completeHandshake(newContact, key);
+      } else{
+        // If the contact didn't sent us a key, we
+        CryptoManager().initHandshake(newContact);
+      }
+
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to create contact.')),
@@ -85,6 +103,7 @@ class _SelectContactPageState extends State<SelectContactPage> {
     }
   }
 
+  // Pop up for choosing a prefix
   void _showPrefixDialog(String phoneNumber) {
     TextEditingController _prefixController = TextEditingController(text: "+");
 
@@ -108,10 +127,12 @@ class _SelectContactPageState extends State<SelectContactPage> {
               onPressed: () {
                 String prefix = _prefixController.text;
                 if (prefix.isNotEmpty && prefix.startsWith("+")) {
+                  // Prefix + the phone number without the 0
                   String updatedPhoneNumber = prefix + phoneNumber.substring(1);
                   String name = selectedContact!.displayName ?? "Contact";
                   Navigator.of(context).pop();
-                  _showConfirmationDialogWithUpdatedNumber(name, updatedPhoneNumber);
+                  // Opens the pop up for confirmation with the new phone number
+                  _showConfirmationDialog(name, updatedPhoneNumber);
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Please enter a valid international prefix.')),
@@ -126,7 +147,8 @@ class _SelectContactPageState extends State<SelectContactPage> {
     );
   }
 
-  void _showConfirmationDialogWithUpdatedNumber(String name, String updatedPhoneNumber) {
+  // Pop up for asking confirmation of inviting new contact
+  void _showConfirmationDialog(String name, String phoneNumber) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -143,7 +165,8 @@ class _SelectContactPageState extends State<SelectContactPage> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                _saveContactToDatabase(updatedPhoneNumber, name);
+                // Starts the contact addition process
+                _saveContactToDatabase(phoneNumber, name);
               },
               child: Text('Confirm'),
             ),
@@ -152,33 +175,7 @@ class _SelectContactPageState extends State<SelectContactPage> {
       },
     );
   }
-
-  void _showConfirmationDialog(contacts_service.Contact contact) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Confirm Contact Addition'),
-          content: Text('Do you want to add ${contact.displayName} as a contact? ${contact.displayName} will receive an SMS of invitation.'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _saveContactToDatabase(contact.phones!.first.value!, contact.displayName ?? "Contact");
-              },
-              child: Text('Confirm'),
-            ),
-          ],
-        );
-      },
-    );
-  }
+  
 
   @override
   Widget build(BuildContext context) {
@@ -188,6 +185,7 @@ class _SelectContactPageState extends State<SelectContactPage> {
       ),
       body: Column(
         children: [
+          // Search bar
           Padding(
             padding: EdgeInsets.all(16.0),
             child: TextField(
@@ -210,24 +208,26 @@ class _SelectContactPageState extends State<SelectContactPage> {
               ),
             ),
           ),
+
+          // Content (list of contacts)
           Expanded(
             child: searchedContacts.isEmpty
-                ? Center(child: CircularProgressIndicator())
+                ? Center(child: CircularProgressIndicator()) // Circular loading while no content
                 : ListView.builder(
-              itemCount: searchedContacts.length,
-              itemBuilder: (context, index) {
-                contacts_service.Contact contact = searchedContacts[index];
-                return ListTile(
-                  title: Text(contact.displayName ?? 'No name'),
-                  subtitle: Text(contact.phones!.isNotEmpty
-                      ? contact.phones!.first.value ?? 'No phone number'
-                      : 'No phone number'),
-                  onTap: () {
-                    _selectContact(contact);
-                  },
-                );
-              },
-            ),
+                  itemCount: searchedContacts.length,
+                  itemBuilder: (context, index) {
+                  contacts_service.Contact contact = searchedContacts[index];
+                  return ListTile(
+                    title: Text(contact.displayName ?? 'No name'),
+                    subtitle: Text(contact.phones!.isNotEmpty
+                        ? contact.phones!.first.value ?? 'No phone number'
+                        : 'No phone number'),
+                    onTap: () {
+                      _selectContact(contact);
+                    },
+                  );
+                },
+              ),
           ),
         ],
       ),
