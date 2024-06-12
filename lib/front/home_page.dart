@@ -10,6 +10,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
 
+  // List with the pages
   static List<Widget> _widgetOptions = <Widget>[
     ChatPage(),
     Contacts(),
@@ -24,6 +25,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Logo and application name on top of the pages
       appBar: AppBar(
         title: Row(
           mainAxisAlignment: MainAxisAlignment.start,
@@ -39,7 +41,10 @@ class _MyHomePageState extends State<MyHomePage> {
         actions: [],
       ),
 
+      // The body is the content of ChatPage() or Contacts()
       body: _widgetOptions.elementAt(_selectedIndex),
+
+      // Bottom navigation bar to navigate between contacts and discussions
       bottomNavigationBar: BottomNavigationBar(
         selectedItemColor: Colors.orangeAccent,
         unselectedItemColor: Colors.grey.shade600,

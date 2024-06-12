@@ -64,7 +64,6 @@ class _PinCodeWidgetState extends State<PinCodeWidget> {
       print(enteredPin);
       await DatabaseHelper().initDatabase(enteredPin);
 
-      // TODO Fetch d'autres trucs ici ?
       CryptoManager().verifyContactsKeys();
       SMSManager smsMonitor = SMSManager();
       smsMonitor.startMonitoring();
