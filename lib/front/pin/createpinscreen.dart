@@ -67,7 +67,7 @@ class _CreatePinScreenState extends State<CreatePinScreen> {
                     ),
                     const SizedBox(height: 80),
                     const Text(
-                      'Créer un code PIN',
+                      'Create a PIN code',
                       style: TextStyle(
                         fontSize: 24,
                         color: Colors.black,
@@ -75,17 +75,17 @@ class _CreatePinScreenState extends State<CreatePinScreen> {
                       ),
                     ),
                     const SizedBox(height: 30),
-                    buildPinField('Nouveau code PIN', (value) {
+                    buildPinField('New PIN code', (value) {
                       newPin = value;
                     }),
                     SizedBox(height: 5),
-                    buildPinField('Confirmer le nouveau code PIN', (value) {
+                    buildPinField('Confirm your new PIN code', (value) {
                       confirmNewPin = value;
                     }),
                     SizedBox(height: 20),
                     ElevatedButton(
                       onPressed: _setPin,
-                      child: Text('Enregistrer le PIN'),
+                      child: Text('Save PIN code'),
                     ),
                   ],
                 ),
@@ -102,7 +102,7 @@ class _CreatePinScreenState extends State<CreatePinScreen> {
       decoration: InputDecoration(
         border: OutlineInputBorder(),
         labelText: label,
-        hintText: 'Entrez un code PIN à 4 chiffres',
+        hintText: 'Enter a 4 numbers PIN code',
       ),
     );
   }

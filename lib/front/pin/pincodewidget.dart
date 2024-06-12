@@ -61,8 +61,8 @@ class _PinCodeWidgetState extends State<PinCodeWidget> {
           context: context,
           builder: (context) {
             return AlertDialog(
-              title: const Text('Erreur'),
-              content: const Text('Le code PIN est incorrect.'),
+              title: const Text('Errpr'),
+              content: const Text('The PIN code is incorrect'),
               actions: [
                 TextButton(
                   onPressed: () {
@@ -116,7 +116,7 @@ class _PinCodeWidgetState extends State<PinCodeWidget> {
                   ),
                   const SizedBox(height: 80),
                   const Text(
-                    'Entrer le code PIN',
+                    'Enter your PIN code',
                     style: TextStyle(
                       fontSize: 32,
                       color: Colors.black,
@@ -124,7 +124,7 @@ class _PinCodeWidgetState extends State<PinCodeWidget> {
                     ),
                   ),
                   const Text(
-                    'Votre code PIN doit contenir 4 chiffres au maximum',
+                    'Your PIN code can contains 4 numbers at most',
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.black,
